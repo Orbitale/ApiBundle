@@ -1,0 +1,22 @@
+parameters:
+    pierstoval.api.originChecker.class: Pierstoval\Bundle\ApiBundle\Services\OriginChecker
+    pierstoval.api.entityMerger.class: Pierstoval\Component\EntityMerger\EntityMerger
+
+services:
+    pierstoval.api.originChecker:
+        class: %pierstoval.api.originChecker.class%
+        arguments:
+            allowedOrigins: %pierstoval_api.allowed_origins%
+            kernelEnvironment: %kernel.environment%
+
+    pierstoval.api.listener:
+        class: Pierstoval\Bundle\ApiBundle\Listeners\JsonResponseListener
+        arguments:
+            kernel: @kernel
+        tags:
+            - { name: kernel.event_subscriber }
+
+    pierstoval_api.entity_merger:
+        class: %pierstoval.api.entityMerger.class%
+        arguments:
+            entityManager: @doctrine
