@@ -17,7 +17,7 @@
         "doctrine/doctrine-bundle": "~1.2",
         "sensio/framework-extra-bundle": "~3.0",
         "friendsofsymfony/rest-bundle": "~1.0",
-        "pierstoval/entity-merger": "~0.1",
+        "pierstoval/entity-merger": "~0.2",
         "jms/serializer": ">=0.16,<1"
     },
     "require-dev": {

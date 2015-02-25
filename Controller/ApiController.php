@@ -2,6 +2,7 @@
 
 namespace Pierstoval\Bundle\ApiBundle\Controller;
 
+use Pierstoval\Component\EntityMerger\EntityMerger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\PersistentCollection;
@@ -11,8 +12,12 @@ use FOS\RestBundle\Controller\FOSRestController;
 use FOS\RestBundle\View\View;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationList;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
  * @Route("/", requirements={"serviceName":"([a-zA-Z0-9\._]?)+"})
@@ -20,7 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
 class ApiController extends FOSRestController
 {
     private $services;
-    private $serviceName;
+    private $service;
 
     /**
      * @Route("/{serviceName}", name="pierstoval_api_cget")
@@ -33,9 +38,7 @@ class ApiController extends FOSRestController
      */
     public function cgetAction($serviceName, Request $request)
     {
-        if ($check = $this->checkAsker($request)) {
-            return $check;
-        }
+        $this->checkAsker($request);
 
         $service = $this->getService($serviceName);
         if ($service instanceof Response) {
@@ -84,6 +87,10 @@ class ApiController extends FOSRestController
             }
         }
 
+        if (!$data) {
+            return $this->error('No item found with this identifier.');
+        }
+
         $data = array($key => $data);
 
         return $this->view($data);
@@ -102,75 +109,31 @@ class ApiController extends FOSRestController
     {
         $this->checkAsker($request);
 
-        $datas = array();
-
-        $serializer = $this->container->get('serializer');
         $service    = $this->getService($serviceName);
 
         /** @var EntityManager $em */
-        $em   = $this->getDoctrine()->getManager();
-        $repo = $em->getRepository($service['entity']);
+        $em = $this->getDoctrine()->getManager();
 
         // Generate a new object
         $object = new $service['entity'];
 
-        $post = $request->request;
+        $errors = $this->mergeObject($object, $request->request);
 
-        // The user object has to be the "json" parameter
-        $userObject = $post->has('json') ? $post->get('json') : null;
-
-        if (!$userObject) {
-            return $this->error('You must specify the "%param%" parameter.', array('%param%' => 'json'));
-        }
-        if (is_string($userObject)) {
-            // Allows either JSON string or array
-            $userObject = json_decode($post->get('json'), true);
-            if (!$userObject) {
-                return $this->error('Error while parsing json.');
-            }
+        if ($errors instanceof ConstraintViolationListInterface && count($errors)) {
+            return $this->validationError($errors);
         }
 
-        if ($post->get('mapping')) {
-            $object = $this->container->get('pierstoval_api.entity_merger')->merge($object, $userObject,
-                $post->get('mapping'));
+        $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
+
+        if ($id && $em->getRepository($service['entity'])->find($id)) {
+            throw new \InvalidArgumentException('"PUT" method is used to insert new datas. If you want to merge object, use the "POST" method instead.');
         } else {
-            // Transform the full item recursively into an array
-            $object        = $serializer->deserialize($serializer->serialize($object, 'json'), 'array', 'json');
-            $requestObject = json_decode($request->get('json'), true);
-
-            // Merge the two arrays with request parameters
-            $userObject = array_merge($object, $requestObject);
-
-            // Serialize POST and deserialize to get full object
-            $json   = $serializer->serialize($userObject, 'json');
-            $object = $serializer->deserialize($json, $service['entity'], 'json');
+            $em->persist($object);
         }
 
-        $errors = $this->get('validator')->validate($object);
+        $em->flush();
 
-        if (!count($errors)) {
-
-            $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
-
-            if ($id && $repo->find($id)) {
-                throw new \InvalidArgumentException('"PUT" method is used to insert new datas. If you want to merge object, use the "POST" method instead.');
-            } else {
-                $em->persist($object);
-            }
-
-            $em->flush();
-
-            $datas['newObject'] = $object;
-        } else {
-            return $this->view(array(
-                'error'   => true,
-                'message' => $this->get('translator')->trans('Invalid form, please re-check. Errors', array(),
-                    'pierstoval_api.exceptions'),
-                'errors'  => $errors,
-            ), 500);
-        }
-
-        return $this->view($datas);
+        return $this->view(array('newObject' => $object));
     }
 
     /**
@@ -186,11 +149,7 @@ class ApiController extends FOSRestController
     public function postAction($serviceName, $id, Request $request)
     {
         $this->checkAsker($request);
-
-        $datas = array();
-
-        $serializer = $this->container->get('serializer');
-        $service    = $this->getService($serviceName);
+        $service = $this->getService($serviceName);
 
         /** @var EntityManager $em */
         $em   = $this->getDoctrine()->getManager();
@@ -200,59 +159,20 @@ class ApiController extends FOSRestController
         $object = $repo->find($id);
 
         if (!$object) {
-            throw $this->createNotFoundException('Object of type "'.$serviceName.'" not found.');
+            return $this->error('No item found with this identifier.');
         }
 
-        $post = $request->request;
+        $errors = $this->mergeObject($object, $request->request);
 
-        // The user object has to be the "json" parameter
-        $userObject = $post->has('json') ? $post->get('json') : null;
-
-        if (!$userObject) {
-            return $this->error('You must specify the "%param%" parameter.', array('%param%' => 'json'));
-        }
-        if (is_string($userObject)) {
-            // Allows either JSON string or array
-            $userObject = json_decode($post->get('json'), true);
-            if (!$userObject) {
-                return $this->error('Error while parsing json.');
-            }
+        if (count($errors)) {
+            return $this->validationError($errors);
         }
 
-        if ($post->get('mapping')) {
-            $object = $this->container->get('pierstoval_api.entity_merger')->merge($object, $userObject,
-                $post->get('mapping'));
-        } else {
-            // Transform the full item recursively into an array
-            $object        = $serializer->deserialize($serializer->serialize($object, 'json'), 'array', 'json');
-            $requestObject = json_decode($request->get('json'), true);
+        $em->merge($object);
+        $em->flush();
 
-            // Merge the two arrays with request parameters
-            $userObject = array_merge($object, $requestObject);
-
-            // Serialize POST and deserialize to get full object
-            $json   = $serializer->serialize($userObject, 'json');
-            $object = $serializer->deserialize($json, $service['entity'], 'json');
-        }
-
-        $errors = $this->get('validator')->validate($object);
-
-        if (!count($errors)) {
-
-            $em->merge($object);
-            $em->flush();
-
-            $datas['newObject'] = $repo->find($id);
-        } else {
-            return $this->view(array(
-                'error'   => true,
-                'message' => $this->get('translator')->trans('Invalid form, please re-check. Errors', array(),
-                    'pierstoval_api.exceptions'),
-                'errors'  => $errors,
-            ), 500);
-        }
-
-        return $this->view($datas);
+        // We retrieve back the object from the database to get it full with relations
+        return $this->view(array('newObject' => $repo->find($id)));
     }
 
     /**
@@ -280,7 +200,7 @@ class ApiController extends FOSRestController
         $key = rtrim($serviceName, 's').'.'.$id.'.old';
 
         if (!$data) {
-            return $this->error('No item with this id.');
+            return $this->error('No item found with this identifier.');
         }
 
         $em->remove($data);
@@ -288,15 +208,13 @@ class ApiController extends FOSRestController
 
         $data = array($key => $data);
 
-        $data['deleted'] = true;
-
         return $this->view($data);
     }
 
     /**
      * @param Request $request
      */
-    private function checkAsker(Request $request)
+    protected function checkAsker(Request $request)
     {
         $this->container->get('pierstoval.api.originChecker')->checkRequest($request);
     }
@@ -310,19 +228,21 @@ class ApiController extends FOSRestController
      * @throws \InvalidArgumentException
      * @return null|string
      */
-    private function getService($serviceName, $throwException = true)
+    protected function getService($serviceName = null, $throwException = true)
     {
         if (!$this->services) {
             $this->services = $this->container->getParameter('pierstoval_api.services');
         }
+        if (null === $serviceName && $this->service) {
+            return $this->service;
+        }
         if (isset($this->services[$serviceName])) {
-            $this->serviceName = $serviceName;
+            $this->service = $this->services[$serviceName];
             return $this->services[$serviceName];
         }
         if ($throwException) {
             if ($this->container->get('kernel')->getEnvironment() === 'prod') {
-                throw new \InvalidArgumentException($this->get('translator')->trans('Unrecognized service %service%',
-                    array('%service%' => $serviceName,)), 1);
+                throw new \InvalidArgumentException($this->get('translator')->trans('Unrecognized service %service%', array('%service%' => $serviceName,)), 1);
             } else {
                 throw new \InvalidArgumentException($this->get('translator')->trans(
                     "Service \"%service%\" not found in the API.\n".
@@ -354,6 +274,20 @@ class ApiController extends FOSRestController
     }
 
     /**
+     * @param ConstraintViolationListInterface $errors
+     *
+     * @return View|Response
+     */
+    protected function validationError(ConstraintViolationListInterface $errors)
+    {
+        return $this->view(array(
+            'error'   => true,
+            'message' => $this->get('translator')->trans('Invalid form, please re-check.', array(), 'pierstoval_api.exceptions'),
+            'errors'  => $errors,
+        ), 500);
+    }
+
+    /**
      * Handles a classic error (not an exception).
      * The difference between this method and an exception is that with this method you can specify HTTP code.
      *
@@ -374,6 +308,57 @@ class ApiController extends FOSRestController
     }
 
     /**
+     * Merges POST datas into an object, and returns validation result
+     *
+     * @param object       $object
+     * @param ParameterBag $post
+     *
+     * @return ConstraintViolationListInterface
+     */
+    protected function mergeObject(&$object, ParameterBag $post)
+    {
+        // The user object has to be the "json" parameter
+        $userObject = $post->has('json') ? $post->get('json') : null;
+
+        if (!$userObject) {
+            $msg = 'You must specify the "json" POST parameter.';
+            return new ConstraintViolationList(array(
+                new ConstraintViolation($msg, $msg, array(), '', null, '', ''),
+            ));
+        }
+        if (is_string($userObject)) {
+            // Allows either JSON string or array
+            $userObject = json_decode($post->get('json'), true);
+            if (!$userObject) {
+                $msg = 'Error while parsing json.';
+                return new ConstraintViolationList(array(
+                    new ConstraintViolation($msg, $msg, array(), '', null, '', ''),
+                ));
+            }
+        }
+
+        $serializer = $this->container->get('serializer');
+
+        if ($post->get('mapping')) {
+            $entityMerger = new EntityMerger($this->getDoctrine()->getManager(), $serializer);
+            $object = $entityMerger->merge($object, $userObject, $post->get('mapping'));
+        } else {
+            // Transform the full item recursively into an array
+            $object        = $serializer->deserialize($serializer->serialize($object, 'json'), 'array', 'json');
+            $requestObject = json_decode($post->get('json'), true);
+
+            // Merge the two arrays with request parameters
+            $userObject = array_merge($object, $requestObject);
+
+            // Serialize POST and deserialize to get full object
+            $json   = $serializer->serialize($userObject, 'json');
+            $object = $serializer->deserialize($json, $this->service['entity'], 'json');
+        }
+
+        return $this->get('validator')->validate($object);
+    }
+
+    /**
      * Parse the subelement request from "get" action in to get a fully "recursive" parameter check.
      *
      * @param array  $subElement
@@ -384,7 +369,7 @@ class ApiController extends FOSRestController
      * @return mixed
      * @throws \Exception
      */
-    private function fetchSubElement($subElement, $service, $data, &$key)
+    protected function fetchSubElement($subElement, $service, $data, &$key)
     {
 
         $elements = explode('/', trim($subElement, '/'));
@@ -432,7 +417,7 @@ class ApiController extends FOSRestController
      * @return int
      * @throws \Exception
      */
-    private function getPropertyValue($field, $object)
+    protected function getPropertyValue($field, $object)
     {
         if (!is_object($object)) {
             throw new \Exception('Field "'.$field.'" cannot be retrieved as analyzed element is not an object.');

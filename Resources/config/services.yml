@@ -1,6 +1,5 @@
 parameters:
     pierstoval.api.originChecker.class: Pierstoval\Bundle\ApiBundle\Services\OriginChecker
-    pierstoval.api.entityMerger.class: Pierstoval\Component\EntityMerger\EntityMerger
 
 services:
     pierstoval.api.originChecker:
@@ -15,8 +14,3 @@ services:
             kernel: @kernel
         tags:
             - { name: kernel.event_subscriber }
-
-    pierstoval_api.entity_merger:
-        class: %pierstoval.api.entityMerger.class%
-        arguments:
-            entityManager: @doctrine
