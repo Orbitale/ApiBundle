@@ -268,7 +268,29 @@ class ApiController extends FOSRestController
     public function deleteAction($serviceName, $id, Request $request)
     {
         $this->checkAsker($request);
-        //TODO
+
+        $service = $this->getService($serviceName);
+
+        $em = $this->getDoctrine()->getManager();
+
+        // Fetch datas
+        $data = $em->getRepository($service['entity'])->find($id);
+
+        // The entity key has it's trailing "s" removed
+        $key = rtrim($serviceName, 's').'.'.$id.'.old';
+
+        if (!$data) {
+            return $this->error('No item with this id.');
+        }
+
+        $em->remove($data);
+        $em->flush();
+
+        $data = array($key => $data);
+
+        $data['deleted'] = true;
+
+        return $this->view($data);
     }
 
     /**
