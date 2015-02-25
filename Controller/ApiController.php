@@ -341,7 +341,18 @@ class ApiController extends FOSRestController
 
         if ($post->get('mapping')) {
             $entityMerger = new EntityMerger($this->getDoctrine()->getManager(), $serializer);
-            $object = $entityMerger->merge($object, $userObject, $post->get('mapping'));
+            try {
+                $object = $entityMerger->merge($object, $userObject, $post->get('mapping'));
+            } catch (\Exception $e) {
+                $msg = $e->getMessage();
+                $propertyPath = null;
+                if (strpos($msg, 'If you want to specify ') !== false) {
+                    $propertyPath = preg_replace('~^.*If you want to specify "([^"]+)".*$~', '$1', $msg);
+                }
+                return new ConstraintViolationList(array(
+                    new ConstraintViolation($msg, $msg, array(), '', $propertyPath, '', ''),
+                ));
+            }
         } else {
             // Transform the full item recursively into an array
             $object        = $serializer->deserialize($serializer->serialize($object, 'json'), 'array', 'json');
