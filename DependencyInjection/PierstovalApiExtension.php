@@ -22,30 +22,13 @@ class PierstovalApiExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        if (!isset($config['format']) || (isset($config['format']) && !$config['format'])) {
-            $config['format'] = 'json';
-        }
-
         if (isset($config['services'])) {
             foreach ($config['services'] as $name => $v) {
                 $config['services'][$name]['name'] = $name;
             }
         }
 
-        if (strpos($container->getParameter('kernel.environment'), 'dev') === 0) {
-            // If we're in dev environment, automatically allows localhost
-            $config['allowed_origins'][] = '127.0.0.1';
-            $config['allowed_origins'][] = 'localhost';
-            $config['allowed_origins'][] = '::1';
-        }
-        if (isset($_SERVER['REMOTE_ADDR'])) {
-            $config['allowed_origins'][] = $_SERVER['REMOTE_ADDR'];
-        }
-        if (isset($_SERVER['SERVER_ADDR'])) {
-            $config['allowed_origins'][] = $_SERVER['SERVER_ADDR'];
-        }
-
-        // Remove duplicates, in case remote and server are the same as your dev environment
+        // Remove duplicates in case of multiple configurations
         $config['allowed_origins'] = array_unique($config['allowed_origins']);
 
         foreach ($config as $name => $value) {

@@ -1,16 +1,15 @@
-parameters:
-    pierstoval.api.originChecker.class: Pierstoval\Bundle\ApiBundle\Services\OriginChecker
 
 services:
     pierstoval.api.originChecker:
-        class: %pierstoval.api.originChecker.class%
+        class: Pierstoval\Bundle\ApiBundle\Services\OriginChecker
         arguments:
             allowedOrigins: %pierstoval_api.allowed_origins%
+            authentication: %pierstoval_api.authentication%
             kernelEnvironment: %kernel.environment%
 
     pierstoval.api.listener:
         class: Pierstoval\Bundle\ApiBundle\Listeners\JsonResponseListener
         arguments:
-            kernel: @kernel
+            kernelEnvironment: %kernel.environment%
         tags:
             - { name: kernel.event_subscriber }

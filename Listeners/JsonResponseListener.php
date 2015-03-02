@@ -7,18 +7,17 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\KernelInterface;
 
 class JsonResponseListener implements EventSubscriberInterface {
 
     /**
-     * @var KernelInterface
+     * @var string
      */
-    private $kernel;
+    private $environment;
 
-    public function __construct(KernelInterface $kernel)
+    public function __construct($environment)
     {
-        $this->kernel = $kernel;
+        $this->environment = $environment;
     }
 
     /**
@@ -60,7 +59,7 @@ class JsonResponseListener implements EventSubscriberInterface {
                 ),
             );
 
-            if ($this->kernel->getEnvironment() !== 'prod') {
+            if ($this->environment === 'dev') {
                 $data['exception']['file'] = $e->getFile();
                 $data['exception']['line'] = $e->getLine();
                 $data['exception']['traceAsString'] = $e->getTraceAsString();
@@ -78,8 +77,8 @@ class JsonResponseListener implements EventSubscriberInterface {
     public static function getSubscribedEvents()
     {
         return array(
-            KernelEvents::RESPONSE => array('onResponse'),
-            KernelEvents::EXCEPTION => array('onException'),
+            KernelEvents::RESPONSE => array('onResponse', 1),
+            KernelEvents::EXCEPTION => array('onException', 1),
         );
     }
 
