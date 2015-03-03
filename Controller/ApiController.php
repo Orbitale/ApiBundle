@@ -267,7 +267,7 @@ class ApiController extends FOSRestController
     protected function view($data = null, $statusCode = null, array $headers = Array())
     {
         $view = parent::view($data, $statusCode, $headers);
-        $view->setFormat($this->container->getParameter('pierstoval_api.format'));
+        $view->setFormat('json');
         $view->setHeader('Content-type', 'application/json; charset=utf-8');
 
         return $this->handleView($view);
