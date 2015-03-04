@@ -21,15 +21,9 @@ class OriginChecker {
      */
     private $allowedOrigins;
 
-    /**
-     * @var string
-     */
-    private $kernelEnvironment;
-
-    public function __construct(array $allowedOrigins, $kernelEnvironment)
+    public function __construct(array $allowedOrigins)
     {
         $this->allowedOrigins = $allowedOrigins;
-        $this->kernelEnvironment = $kernelEnvironment;
     }
 
     /**

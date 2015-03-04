@@ -4,7 +4,6 @@ services:
         class: Pierstoval\Bundle\ApiBundle\Services\OriginChecker
         arguments:
             allowedOrigins: %pierstoval_api.allowed_origins%
-            kernelEnvironment: %kernel.environment%
 
     pierstoval.api.listener:
         class: Pierstoval\Bundle\ApiBundle\Listeners\JsonResponseListener

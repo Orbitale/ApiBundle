@@ -10,13 +10,12 @@
 
 namespace Pierstoval\Bundle\ApiBundle\Controller;
 
+use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Pierstoval\Component\EntityMerger\EntityMerger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\PersistentCollection;
-use Doctrine\ORM\Query;
-use FOS\RestBundle\Controller\Annotations as Rest;
 use FOS\RestBundle\Controller\FOSRestController;
 use FOS\RestBundle\View\View;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
@@ -349,7 +348,9 @@ class ApiController extends FOSRestController
         $serializer = $this->container->get('serializer');
 
         if ($post->get('mapping')) {
-            $entityMerger = new EntityMerger($this->getDoctrine()->getManager(), $serializer);
+            /** @var ObjectManager $entityManager */
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityMerger = new EntityMerger($entityManager, $serializer);
             try {
                 $object = $entityMerger->merge($object, $userObject, $post->get('mapping'));
             } catch (\Exception $e) {
