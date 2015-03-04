@@ -52,13 +52,80 @@ class ApiControllerTest extends AbstractTestCase
     {
         $response = $this->controller->cgetAction('data', $this->createRequest());
 
+        $ids = $this->getExpectedFixturesIds();
+
         $this->assertInstanceOf('Symfony\Component\HttpFoundation\Response', $response);
 
         if ($response instanceof Response) {
             $content = $this->getResponseContent($response);
             $this->assertArrayHasKey('data', $content);
             $this->assertCount(count($this->entityFixtures), isset($content['data']) ? $content['data'] : array());
+            foreach ($ids as $id) {
+                $id = current($id) - 1;
+                $data = array_key_exists($id, $content['data']) ? $content['data'][$id] : null;
+                $this->assertNotNull($data);
+                if (null !== $data) {
+                    $this->assertEquals($data['name'], $this->entityFixtures[$id]['name']);
+                    $this->assertEquals($data['value'], $this->entityFixtures[$id]['value']);
+                    $this->assertArrayHasKey('id', $data);
+                    $this->assertArrayNotHasKey('hidden', $data);
+                }
+            }
+        }
+    }
+
+    public function getExpectedFixturesIds()
+    {
+        $ids = array();
+
+        foreach ($this->entityFixtures as $key => $fixture) {
+            $ids[] = array($key + 1);
         }
 
+        return $ids;
     }
+
+    /**
+     * @dataProvider getExpectedFixturesIds
+     */
+    public function testIdGet($id)
+    {
+        $response = $this->controller->getAction('data', $id, null, $this->createRequest());
+
+        $this->assertInstanceOf('Symfony\Component\HttpFoundation\Response', $response);
+
+        if ($response instanceof Response) {
+            $content = $this->getResponseContent($response);
+            $this->assertArrayHasKey('data', $content);
+            $this->assertCount(4, isset($content['data']) ? $content['data'] : array());
+            $data = isset($content['data']) ? $content['data'] : array();
+            if (count($data)) {
+                $this->assertEquals($id, $data['id']);
+                $this->assertEquals($this->entityFixtures[$id-1]['name'], $data['name']);
+                $this->assertEquals($this->entityFixtures[$id-1]['value'], $data['value']);
+                $this->assertArrayNotHasKey('hidden', $data);
+            }
+        }
+    }
+
+    /**
+     * @dataProvider getExpectedFixturesIds
+     */
+    public function testSubElementSimpleAttributeGet($id)
+    {
+        $response = $this->controller->getAction('data', $id, 'value', $this->createRequest());
+
+        $this->assertInstanceOf('Symfony\Component\HttpFoundation\Response', $response);
+
+        if ($response instanceof Response) {
+            $content = $this->getResponseContent($response);
+            $this->assertArrayHasKey('data', $content);
+            $this->assertArrayHasKey('path', $content);
+            $this->assertEquals('data.'.$id.'.value', isset($content['path']) ? $content['path'] : null);
+            $data = isset($content['data']) ? $content['data'] : null;
+            $this->assertNotNull($data);
+            $this->assertEquals($this->entityFixtures[$id-1]['value'], $data);
+        }
+    }
+
 }

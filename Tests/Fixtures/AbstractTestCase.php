@@ -118,9 +118,9 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
             $randomString .= $characters[rand(0, $charactersLength - 1)];
         }
         $this->entityFixtures = array(
-            array('First one', 1, 'this text should be hidden'),
-            array('Second one', -1, 'this text should also be hidden'),
-            array('Second one', $length, 'And another long text (care, it\'s long):'.$randomString),
+            array('name' => 'First one',  'value' => 1,       'hidden' => 'this text should be hidden'),
+            array('name' => 'Second one', 'value' => -1,      'hidden' => 'this text should also be hidden'),
+            array('name' => 'Second one', 'value' => $length, 'hidden' => 'And another long text (care, it\'s long):'.$randomString),
         );
         return $this->entityFixtures;
     }
@@ -132,9 +132,9 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
             /** @var ApiData $object */
             $object = new $this->entityClass();
             $object
-                ->setName($entity[0])
-                ->setValue($entity[1])
-                ->setHidden($entity[2])
+                ->setName($entity['name'])
+                ->setValue($entity['value'])
+                ->setHidden($entity['hidden'])
             ;
             $this->em->persist($object);
         }
