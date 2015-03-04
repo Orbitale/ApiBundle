@@ -10,6 +10,7 @@
 
 namespace Pierstoval\Bundle\ApiBundle\Controller;
 
+use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Pierstoval\Component\EntityMerger\EntityMerger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
@@ -441,11 +442,13 @@ class ApiController extends FOSRestController
         if (!is_object($object)) {
             throw new \Exception('Field "'.$field.'" cannot be retrieved as analyzed element is not an object.');
         }
+        /** @var ClassMetadataInfo $metadatas */
         $metadatas = $this->getDoctrine()->getManager()->getClassMetadata(get_class($object));
 
         if ($field === '_id') {
             // Check for identifier
-            return (int) (array_values($metadatas->getIdentifierValues($object))[0]);
+            $values = array_values($metadatas->getIdentifierValues($object));
+            return (int) $values[0];
         } else {
             // Check for any other field
             $service = $this->getService($field, false);
@@ -467,7 +470,8 @@ class ApiController extends FOSRestController
                 }
                 return $data;
             } else {
-                throw new \Exception('Field "'.$field.'" does not exist in "'.(new \ReflectionClass($object))->getShortName().'" object');
+                $ref = new \ReflectionClass($object);
+                throw new \Exception('Field "'.$field.'" does not exist in "'.$ref->getShortName().'" object');
             }
         }
 
