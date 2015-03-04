@@ -49,9 +49,6 @@ class ApiController extends FOSRestController
         $this->checkAsker($request);
 
         $service = $this->getService($serviceName);
-        if ($service instanceof Response) {
-            return $service;
-        }
 
         $datas = $this->getDoctrine()->getManager()->getRepository($service['entity'])->findAll();
 
@@ -215,14 +212,6 @@ class ApiController extends FOSRestController
     }
 
     /**
-     * @param Request $request
-     */
-    protected function checkAsker(Request $request)
-    {
-        $this->container->get('pierstoval.api.originChecker')->checkRequest($request);
-    }
-
-    /**
      * Retrieves a service name from the configuration
      *
      * @param string $serviceName
@@ -231,7 +220,7 @@ class ApiController extends FOSRestController
      * @throws \InvalidArgumentException
      * @return null|string
      */
-    protected function getService($serviceName = null, $throwException = true)
+    public function getService($serviceName = null, $throwException = true)
     {
         if (!$this->services) {
             $this->services = $this->container->getParameter('pierstoval_api.services');
@@ -256,6 +245,14 @@ class ApiController extends FOSRestController
             }
         }
         return null;
+    }
+
+    /**
+     * @param Request $request
+     */
+    protected function checkAsker(Request $request)
+    {
+        $this->container->get('pierstoval.api.originChecker')->checkRequest($request);
     }
 
     /**
