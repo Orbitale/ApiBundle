@@ -68,10 +68,10 @@ class JsonResponseListener implements EventSubscriberInterface {
             );
 
             if ($this->environment === 'dev') {
-                $data['exception']['file'] = $e->getFile();
-                $data['exception']['line'] = $e->getLine();
-                $data['exception']['traceAsString'] = $e->getTraceAsString();
-                $data['exception']['trace'] = $e->getTrace();
+                $data['exception_trace']['file'] = $e->getFile();
+                $data['exception_trace']['line'] = $e->getLine();
+                $data['exception_trace']['traceAsString'] = $e->getTraceAsString();
+                $data['exception_trace']['trace'] = $e->getTrace();
             }
 
             // Set a proper new response which will be JSON automatically
