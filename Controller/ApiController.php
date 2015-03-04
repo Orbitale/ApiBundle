@@ -55,9 +55,7 @@ class ApiController extends FOSRestController
 
         $datas = $this->getDoctrine()->getManager()->getRepository($service['entity'])->findAll();
 
-        $datas = array($serviceName => $datas);
-
-        return $this->view($datas);
+        return $this->view(array($serviceName => $datas));
     }
 
     /**
@@ -99,25 +97,23 @@ class ApiController extends FOSRestController
             return $this->error('No item found with this identifier.');
         }
 
-        $data = array($key => $data);
-
-        return $this->view($data);
+        return $this->view(array('data' => $data, 'path' => $key));
     }
 
     /**
-     * @Route("/{serviceName}", requirements={"serviceName": "\w+"}, name="pierstoval_api_put")
-     * @Method({"PUT"})
+     * @Route("/{serviceName}", requirements={"serviceName": "\w+"}, name="pierstoval_api_post")
+     * @Method({"post"})
      *
      * @param string  $serviceName
      * @param Request $request
      *
      * @return View|Response
      */
-    public function putAction($serviceName, Request $request)
+    public function postAction($serviceName, Request $request)
     {
         $this->checkAsker($request);
 
-        $service    = $this->getService($serviceName);
+        $service = $this->getService($serviceName);
 
         /** @var EntityManager $em */
         $em = $this->getDoctrine()->getManager();
@@ -133,20 +129,25 @@ class ApiController extends FOSRestController
 
         $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
 
-        if ($id && $em->getRepository($service['entity'])->find($id)) {
-            throw new \InvalidArgumentException('"PUT" method is used to insert new datas. If you want to merge object, use the "POST" method instead.');
+        $repo = $em->getRepository($service['entity']);
+
+        if ($id && $repo->find($id)) {
+            throw new \InvalidArgumentException('"POST" method is used to insert new datas. If you want to merge object, use the "PUT" method instead.');
         } else {
             $em->persist($object);
         }
 
         $em->flush();
 
-        return $this->view(array('newObject' => $object));
+        // Get the new object ID for full refresh
+        $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
+
+        return $this->view(array('data' => $repo->find($id), 'path' => rtrim($serviceName, 's').'.'.$id));
     }
 
     /**
-     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="pierstoval_api_post")
-     * @Method({"POST"})
+     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="pierstoval_api_put")
+     * @Method({"PUT"})
      *
      * @param string  $serviceName
      * @param integer $id
@@ -154,7 +155,7 @@ class ApiController extends FOSRestController
      *
      * @return View|Response
      */
-    public function postAction($serviceName, $id, Request $request)
+    public function putAction($serviceName, $id, Request $request)
     {
         $this->checkAsker($request);
         $service = $this->getService($serviceName);
@@ -180,7 +181,7 @@ class ApiController extends FOSRestController
         $em->flush();
 
         // We retrieve back the object from the database to get it full with relations
-        return $this->view(array('newObject' => $repo->find($id)));
+        return $this->view(array('data' => $repo->find($id), 'path' => rtrim($serviceName, 's').'.'.$id));
     }
 
     /**
@@ -201,11 +202,7 @@ class ApiController extends FOSRestController
 
         $em = $this->getDoctrine()->getManager();
 
-        // Fetch datas
         $data = $em->getRepository($service['entity'])->find($id);
-
-        // The entity key has it's trailing "s" removed
-        $key = rtrim($serviceName, 's').'.'.$id.'.old';
 
         if (!$data) {
             return $this->error('No item found with this identifier.');
@@ -214,9 +211,7 @@ class ApiController extends FOSRestController
         $em->remove($data);
         $em->flush();
 
-        $data = array($key => $data);
-
-        return $this->view($data);
+        return $this->view(array('data' => $data, 'path' => rtrim($serviceName, 's').'.'.$id));
     }
 
     /**
