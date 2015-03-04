@@ -1,0 +1,33 @@
+
+parameters:
+    locale: fr
+
+framework:
+    test:            ~
+    secret:          secret
+    translator:      { fallback: %locale% }
+    default_locale:  %locale%
+    router:          { resource: "%kernel.root_dir%/config/routing.yml" }
+    form:            true
+    csrf_protection: true
+    validation:      { enable_annotations: true }
+    templating:      { engines: ['twig'] }
+    session:
+        storage_id: session.storage.filesystem
+
+doctrine:
+    dbal:
+        driver:   pdo_sqlite
+        host:     localhost
+        dbname:   pierstoval_api_test
+        user:     root
+        password: ~
+        charset:  UTF8
+        memory:   true
+    orm:
+        auto_generate_proxy_classes: true
+        auto_mapping: true
+
+services:
+    pierstoval_api_test_controller:
+        class: Pierstoval\Bundle\ApiBundle\Controller\ApiController
