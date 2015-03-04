@@ -55,9 +55,17 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
     public function __construct($name = null, array $data = array(), $dataName = '')
     {
         parent::__construct($name, $data, $dataName);
+        $this->initKernelAndController('test');
+    }
+
+    protected function initKernelAndController($env)
+    {
+        if ($this->kernel) {
+            $this->tearDown();
+        }
 
         // Boot the AppKernel in the test environment and with the debug.
-        $this->kernel = new AppKernel('test', true);
+        $this->kernel = new AppKernel($env, true);
         $this->kernel->boot();
 
         // Store the container and the entity manager in test case properties
@@ -72,8 +80,6 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
 
         // Add datas in the database
         $this->addFixtures();
-
-        parent::setUp();
     }
 
     public function createRequest($method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $server = array(), $content = null)
@@ -85,6 +91,8 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         ), $server);
 
         $httpRequest = Request::create('/', $method, $parameters, $cookies, $files, $server, $content);
+
+        $httpRequest->attributes->set('_controller', 'Pierstoval\Bundle\ApiBundle\Controller\ApiController');
 
         $this->container->set('request', $httpRequest, 'request');
 
@@ -141,6 +149,20 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         $this->em->flush();
     }
 
+    protected function parseJsonMsg($jsonLastErr)
+    {
+        switch ($jsonLastErr) {
+            case JSON_ERROR_NONE:           $jsonMsg = ' - No errors'; break;
+            case JSON_ERROR_DEPTH:          $jsonMsg = ' - Maximum stack depth exceeded'; break;
+            case JSON_ERROR_STATE_MISMATCH: $jsonMsg = ' - Underflow or the modes mismatch'; break;
+            case JSON_ERROR_CTRL_CHAR:      $jsonMsg = ' - Unexpected control character found'; break;
+            case JSON_ERROR_SYNTAX:         $jsonMsg = ' - Syntax error, malformed JSON'; break;
+            case JSON_ERROR_UTF8:           $jsonMsg = ' - Malformed UTF-8 characters, possibly incorrectly encoded'; break;
+            default:                        $jsonMsg = ' - Unknown error'; break;
+        }
+        return $jsonMsg;
+    }
+
     /**
      * Overwrite this method to get specific metadata.
      *
@@ -155,6 +177,7 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
     {
         // Shutdown the kernel.
         $this->kernel->shutdown();
+        $this->kernel = null;
 
         parent::tearDown();
     }

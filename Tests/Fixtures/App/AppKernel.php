@@ -27,16 +27,6 @@ class AppKernel extends Kernel
         );
     }
 
-    public function getEnvironment()
-    {
-        return 'test';
-    }
-
-    public function isDebug()
-    {
-        return true;
-    }
-
     public function registerContainerConfiguration(LoaderInterface $loader)
     {
         $loader->load(__DIR__.'/config/config.yml');

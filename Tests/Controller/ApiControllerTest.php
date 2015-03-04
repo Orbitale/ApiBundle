@@ -15,8 +15,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ApiControllerTest extends AbstractTestCase
 {
+
     /**
      * @param Response $response
+     * @param int      $expectedCode
+     *
      * @return array
      */
     protected function getResponseContent(Response $response, $expectedCode = 200)
@@ -28,15 +31,8 @@ class ApiControllerTest extends AbstractTestCase
         $json = json_decode($response->getContent(), true);
 
         $jsonLastErr = json_last_error();
-        switch ($jsonLastErr) {
-            case JSON_ERROR_NONE:           $jsonMsg = ' - No errors'; break;
-            case JSON_ERROR_DEPTH:          $jsonMsg = ' - Maximum stack depth exceeded'; break;
-            case JSON_ERROR_STATE_MISMATCH: $jsonMsg = ' - Underflow or the modes mismatch'; break;
-            case JSON_ERROR_CTRL_CHAR:      $jsonMsg = ' - Unexpected control character found'; break;
-            case JSON_ERROR_SYNTAX:         $jsonMsg = ' - Syntax error, malformed JSON'; break;
-            case JSON_ERROR_UTF8:           $jsonMsg = ' - Malformed UTF-8 characters, possibly incorrectly encoded'; break;
-            default:                        $jsonMsg = ' - Unknown error'; break;
-        }
+        $jsonMsg = $this->parseJsonMsg($jsonLastErr);
+
         $this->assertEquals(JSON_ERROR_NONE, $jsonLastErr, "\nERROR! Invalid response, json error:\n> ".$jsonLastErr.$jsonMsg);
 
         return $json;
@@ -46,6 +42,45 @@ class ApiControllerTest extends AbstractTestCase
     {
         $objects = $this->em->getRepository($this->entityClass)->findAll();
         $this->assertNotEmpty($objects);
+    }
+
+    public function testTwiceTheService()
+    {
+        $this->controller->cgetAction('data', $this->createRequest());
+
+        $service = $this->controller->getService();
+
+        $this->assertTrue(is_array($service));
+        $this->assertNotEmpty($service);
+    }
+
+    /**
+     * @dataProvider provideWrongServices
+     */
+    public function testWrongService($env, $expectedExceptionMessage)
+    {
+        $this->initKernelAndController($env);
+
+        $wrongService = 'wrong_service';
+
+        $exception = new \Exception();
+
+        try {
+            $this->controller->cgetAction($wrongService, $this->createRequest());
+        } catch (\Exception $e) {
+            $exception = $e;
+        }
+
+        $this->assertContains(sprintf($expectedExceptionMessage, $wrongService), $exception->getMessage());
+        $this->assertContains('ApiController', $exception->getFile());
+    }
+
+    public function provideWrongServices()
+    {
+        return array(
+            array('test', 'Service "%s" not found in the API.'),
+            array('prod', 'Unrecognized service %s'),
+        );
     }
 
     public function testCget()
