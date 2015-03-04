@@ -14,11 +14,19 @@ use AppKernel;
 use Doctrine\DBAL\Schema\SchemaException;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
+use Pierstoval\Bundle\ApiBundle\Controller\ApiController;
 use Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData;
 use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\HttpFoundation\Request;
 
 abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
 {
+
+    /**
+     * @var array
+     */
+    protected $entityFixtures = array();
+
     /**
      * @var string
      */
@@ -39,6 +47,11 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
      */
     protected $container;
 
+    /**
+     * @var ApiController
+     */
+    protected $controller;
+
     public function __construct($name = null, array $data = array(), $dataName = '')
     {
         parent::__construct($name, $data, $dataName);
@@ -48,8 +61,11 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         $this->kernel->boot();
 
         // Store the container and the entity manager in test case properties
-        $this->container = $this->kernel->getContainer();
-        $this->em        = $this->container->get('doctrine')->getManager();
+        $this->container  = $this->kernel->getContainer();
+        $this->controller = $this->container->get('pierstoval_api_test_controller');
+        $this->em         = $this->container->get('doctrine')->getManager();
+
+        $this->controller->setContainer($this->container);
 
         // Build the schema for sqlite
         $this->generateSchema();
@@ -58,6 +74,21 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         $this->addFixtures();
 
         parent::setUp();
+    }
+
+    public function createRequest($method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $server = array(), $content = null)
+    {
+        $this->container->enterScope('request');
+
+        $server = array_replace(array(
+            'HTTP_ORIGIN' => 'http://localhost/',
+        ), $server);
+
+        $httpRequest = Request::create('/', $method, $parameters, $cookies, $files, $server, $content);
+
+        $this->container->set('request', $httpRequest, 'request');
+
+        return $httpRequest;
     }
 
     protected function generateSchema()
@@ -74,8 +105,11 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         }
     }
 
-    protected function addFixtures()
+    protected function generateFixtures()
     {
+        if (count($this->entityFixtures)) {
+            return $this->entityFixtures;
+        }
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
         $randomString = '';
@@ -83,11 +117,17 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         for ($i = 0; $i < $length; $i++) {
             $randomString .= $characters[rand(0, $charactersLength - 1)];
         }
-        $entities = array(
+        $this->entityFixtures = array(
             array('First one', 1, 'this text should be hidden'),
             array('Second one', -1, 'this text should also be hidden'),
             array('Second one', $length, 'And another long text (care, it\'s long):'.$randomString),
         );
+        return $this->entityFixtures;
+    }
+
+    protected function addFixtures()
+    {
+        $entities = $this->generateFixtures();
         foreach ($entities as $entity) {
             /** @var ApiData $object */
             $object = new $this->entityClass();

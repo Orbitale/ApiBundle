@@ -31,3 +31,9 @@ doctrine:
 services:
     pierstoval_api_test_controller:
         class: Pierstoval\Bundle\ApiBundle\Controller\ApiController
+
+pierstoval_api:
+    allowed_origins:
+        - localhost
+    services:
+        data: { entity: Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData }
