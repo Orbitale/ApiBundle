@@ -228,7 +228,7 @@ class ApiController extends FOSRestController
      * @throws \InvalidArgumentException
      * @return null|string
      */
-    public function getService($serviceName = null, $throwException = true)
+    protected function getService($serviceName = null, $throwException = true)
     {
         if (!$this->services) {
             $this->services = $this->container->getParameter('pierstoval_api.services');

@@ -1,0 +1,5 @@
+
+pierstoval_api:
+    resource: "@PierstovalApiBundle/Controller/"
+    type:     annotation
+    prefix:   /api/

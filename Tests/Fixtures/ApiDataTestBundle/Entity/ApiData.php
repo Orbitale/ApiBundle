@@ -12,6 +12,7 @@ namespace Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as Serializer;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity
@@ -31,6 +32,7 @@ class ApiData
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
      * @Serializer\Expose
      */
     protected $name;
@@ -41,7 +43,7 @@ class ApiData
      */
     protected $value;
     /**
-     * @ORM\Column(type="text")
+     * @ORM\Column(type="text", nullable=true)
      * @Serializer\Exclude
      */
     protected $hidden;

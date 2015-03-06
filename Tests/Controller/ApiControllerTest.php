@@ -44,16 +44,6 @@ class ApiControllerTest extends AbstractTestCase
         $this->assertNotEmpty($objects);
     }
 
-    public function testTwiceTheService()
-    {
-        $this->controller->cgetAction('data', $this->createRequest());
-
-        $service = $this->controller->getService();
-
-        $this->assertTrue(is_array($service));
-        $this->assertNotEmpty($service);
-    }
-
     /**
      * @dataProvider provideWrongServices
      */
@@ -144,6 +134,33 @@ class ApiControllerTest extends AbstractTestCase
     }
 
     /**
+     * @dataProvider provideWrongIds
+     */
+    public function testIdGetWithInexistentItem($id)
+    {
+
+        $response = $this->controller->getAction('data', $id, null, $this->createRequest());
+
+        $this->assertInstanceOf('Symfony\Component\HttpFoundation\Response', $response);
+
+        if ($response instanceof Response) {
+            $data = $this->getResponseContent($response, 404);
+            $this->assertArrayHasKey('error', $data);
+            $this->assertArrayHasKey('message', $data);
+            $this->assertContains('No item found', isset($data['message']) ? $data['message'] : null);
+        }
+    }
+
+    public function provideWrongIds()
+    {
+        return array(
+            array(1000),
+            array('wrong'),
+            array(-1),
+        );
+    }
+
+    /**
      * @dataProvider getExpectedFixturesIds
      */
     public function testSubElementSimpleAttributeGet($id)
@@ -161,6 +178,117 @@ class ApiControllerTest extends AbstractTestCase
             $this->assertNotNull($data);
             $this->assertEquals($this->entityFixtures[$id-1]['value'], $data);
         }
+    }
+
+    public function testPost()
+    {
+        $data = array(
+            'json' => array('name' => 'new name', 'value' => 10, 'hidden' => 'will not be inserted (no mapping, so serializer only)',),
+            'mapping' => null,
+        );
+        $request = $this->createRequest('POST', $data);
+
+        $response = $this->controller->postAction('data', $request);
+
+        $content = $this->getResponseContent($response, 201);
+
+        $this->assertArrayHasKey('data', $content);
+        $this->assertArrayHasKey('path', $content);
+        $this->assertArrayHasKey('link', $content);
+
+        $data = @$content['data'];
+
+        $this->assertEquals(4, @$data['id']);
+        $this->assertEquals('new name', @$data['name']);
+        $this->assertEquals(10, @$data['value']);
+        $this->assertArrayNotHasKey('hidden', $data);
+        $this->assertEquals('data.4', $content['path']);
+
+        $dbObject = $this->container->get('doctrine')->getManager()->getRepository($this->entityClass)->find($data['id']);
+
+        $this->assertNotNull($dbObject);
+        if (null !== $dbObject) {
+            $this->assertEquals(null, $dbObject->getHidden());
+        }
+    }
+
+    public function testPostMapping()
+    {
+        $data = array(
+            'json' => array('name' => 'AnotherOne', 'value' => 50, 'hidden' => 'Correct!',),
+            'mapping' => array('name' => true, 'value' => true, 'hidden' => true),
+        );
+        $request = $this->createRequest('POST', $data);
+
+        $response = $this->controller->postAction('data', $request);
+
+        $content = $this->getResponseContent($response, 201);
+
+        $this->assertArrayHasKey('data', $content);
+        $this->assertArrayHasKey('path', $content);
+        $this->assertArrayHasKey('link', $content);
+
+        $data = @$content['data'];
+
+        $this->assertEquals(4, @$data['id']);
+        $this->assertEquals('AnotherOne', @$data['name']);
+        $this->assertEquals(50, @$data['value']);
+        $this->assertArrayNotHasKey('hidden', $data);
+        $this->assertEquals('data.4', $content['path']);
+
+        $dbObject = $this->container->get('doctrine')->getManager()->getRepository($this->entityClass)->find($data['id']);
+
+        $this->assertNotNull($dbObject);
+        if (null !== $dbObject) {
+            $this->assertEquals('Correct!', $dbObject->getHidden());
+        }
+    }
+
+    public function testPostWithId()
+    {
+        $data = array(
+            'json' => array('id' => 1, 'name' => 'AnotherOne', 'value' => 50, 'hidden' => 'Correct!',),
+            'mapping' => array('id' => true, 'name' => true, 'value' => true, 'hidden' => true),
+        );
+        $request = $this->createRequest('POST', $data);
+
+        $response = null;
+        $e = null;
+        try {
+            $response = $this->controller->postAction('data', $request);
+        } catch (\Exception $e) {
+            $this->assertContains('"POST" method is used to insert new datas.', $e->getMessage());
+            $this->assertContains('If you want to edit an object, use the "PUT" method instead.', $e->getMessage());
+        }
+
+        $this->assertNull($response);
+        $this->assertInstanceOf('InvalidArgumentException', $e);
+        $this->assertInstanceOf('Exception', $e);
+    }
+
+    public function testPostWithWrongDatas()
+    {
+        $data = array(
+            'json' => array('name' => '', 'value' => 0),
+            'mapping' => array('name' => true, 'value' => true),
+        );
+        $request = $this->createRequest('POST', $data);
+
+        $response = $this->controller->postAction('data', $request);
+
+        $content = $this->getResponseContent($response, 400);
+
+        $this->assertTrue(@$content['error']);
+        $this->assertEquals('Invalid form, please re-check.', @$content['message']);
+
+        $errors = isset($content['errors']) ? $content['errors'] : array();
+        $this->assertEquals(1, count($errors));
+
+        $error = current($errors);
+
+        $this->assertEquals('name', @$error['property_path']);
+        $translatedErrorMessage = $this->container->get('translator')->trans('This value should not be blank.', array(), 'validators');
+        $this->assertEquals($translatedErrorMessage, @$error['message']);
     }
 
 }
