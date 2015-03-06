@@ -23,6 +23,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
@@ -52,7 +53,10 @@ class ApiController extends FOSRestController
 
         $datas = $this->getDoctrine()->getManager()->getRepository($service['entity'])->findAll();
 
-        return $this->view(array($serviceName => $datas));
+        return $this->view(array(
+            'data' => $datas,
+            'path' => $serviceName,
+        ), count($datas) ? 200 : 204);
     }
 
     /**
@@ -84,10 +88,6 @@ class ApiController extends FOSRestController
 
         if ($subElement) {
             $data = $this->fetchSubElement($subElement, $service, $data, $key);
-            if ($data instanceof Response) {
-                // Means we have an error, probably, so we send it to the browser
-                return $data;
-            }
         }
 
         if (!$data) {
@@ -129,7 +129,7 @@ class ApiController extends FOSRestController
         $repo = $em->getRepository($service['entity']);
 
         if ($id && $repo->find($id)) {
-            throw new \InvalidArgumentException('"POST" method is used to insert new datas. If you want to merge object, use the "PUT" method instead.');
+            throw new \InvalidArgumentException('"POST" method is used to insert new datas. If you want to edit an object, use the "PUT" method instead.');
         } else {
             $em->persist($object);
         }
@@ -139,7 +139,11 @@ class ApiController extends FOSRestController
         // Get the new object ID for full refresh
         $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
 
-        return $this->view(array('data' => $repo->find($id), 'path' => rtrim($serviceName, 's').'.'.$id));
+        return $this->view(array(
+            'data' => $repo->find($id),
+            'path' => rtrim($serviceName, 's').'.'.$id,
+            'link' => $this->generateUrl('pierstoval_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
+        ), 201);
     }
 
     /**
@@ -178,7 +182,11 @@ class ApiController extends FOSRestController
         $em->flush();
 
         // We retrieve back the object from the database to get it full with relations
-        return $this->view(array('data' => $repo->find($id), 'path' => rtrim($serviceName, 's').'.'.$id));
+        return $this->view(array(
+            'data' => $repo->find($id),
+            'path' => rtrim($serviceName, 's').'.'.$id,
+            'link' => $this->generateUrl('pierstoval_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
+        ), 200);
     }
 
     /**
@@ -284,7 +292,7 @@ class ApiController extends FOSRestController
             'error'   => true,
             'message' => $this->get('translator')->trans('Invalid form, please re-check.', array(), 'pierstoval_api.exceptions'),
             'errors'  => $errors,
-        ), 500);
+        ), 400);
     }
 
     /**
@@ -357,11 +365,10 @@ class ApiController extends FOSRestController
             }
         } else {
             // Transform the full item recursively into an array
-            $object        = $serializer->deserialize($serializer->serialize($object, 'json'), 'array', 'json');
-            $requestObject = json_decode($post->get('json'), true);
+            $object = $serializer->deserialize($serializer->serialize($object, 'json'), 'array', 'json');
 
             // Merge the two arrays with request parameters
-            $userObject = array_merge($object, $requestObject);
+            $userObject = array_merge($object, $userObject);
 
             // Serialize POST and deserialize to get full object
             $json   = $serializer->serialize($userObject, 'json');
