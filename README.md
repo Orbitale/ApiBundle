@@ -1,6 +1,7 @@
 
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/f0581464-9c02-4cfa-81dc-3fe1eae4b418/mini.png)](https://insight.sensiolabs.com/projects/f0581464-9c02-4cfa-81dc-3fe1eae4b418)
 [![Build Status](https://travis-ci.org/Orbitale/ApiBundle.svg)](https://travis-ci.org/Orbitale/ApiBundle)
+[![Coverage Status](https://coveralls.io/repos/Orbitale/ApiBundle/badge.svg)](https://coveralls.io/r/Orbitale/ApiBundle)
 
 Orbitale ApiBundle
 ==================
