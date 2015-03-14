@@ -8,10 +8,10 @@
 * file that was distributed with this source code.
 */
 
-namespace Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle;
+namespace Orbitale\Bundle\ApiBundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
-class ApiDataTestBundle extends Bundle
+class OrbitaleApiBundle extends Bundle
 {
 }

@@ -1,14 +1,14 @@
 {
-    "name": "pierstoval/api-bundle",
+    "name": "orbitale/api-bundle",
     "description": "A Symfony bundle that generates webservices based on entities list.",
     "keywords": ["api", "webservices", "symfony", "entity", "entities" ],
     "type": "symfony-bundle",
     "license": "MIT",
     "authors": [
         {
-            "name": "Alex \"Pierstoval\" Ancelet",
-            "email": "pierstoval@gmail.com",
-            "homepage": "http://www.pierstoval.com/"
+            "name": "Alexandre Rock Ancelet",
+            "email": "alex@orbitale.io",
+            "homepage": "http://www.orbitale.io/"
         }
     ],
     "require": {
@@ -17,7 +17,7 @@
         "doctrine/doctrine-bundle": "~1.2",
         "sensio/framework-extra-bundle": "~3.0",
         "friendsofsymfony/rest-bundle": "~1.0",
-        "pierstoval/entity-merger": "~0.2",
+        "orbitale/entity-merger": "~0.2",
         "jms/serializer": ">=0.16,<1",
         "jms/serializer-bundle": "~0.13"
     },
@@ -28,7 +28,7 @@
     },
     "autoload": {
         "psr-4": {
-           "Pierstoval\\Bundle\\ApiBundle\\": ""
+           "Orbitale\\Bundle\\ApiBundle\\": ""
         }
     }
 }

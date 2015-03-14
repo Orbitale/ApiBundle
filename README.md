@@ -1,8 +1,8 @@
 
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/f0581464-9c02-4cfa-81dc-3fe1eae4b418/mini.png)](https://insight.sensiolabs.com/projects/f0581464-9c02-4cfa-81dc-3fe1eae4b418)
-[![Build Status](https://travis-ci.org/Pierstoval/ApiBundle.svg)](https://travis-ci.org/Pierstoval/ApiBundle)
+[![Build Status](https://travis-ci.org/Orbitale/ApiBundle.svg)](https://travis-ci.org/Orbitale/ApiBundle)
 
-Pierstoval ApiBundle
+Orbitale ApiBundle
 ==================
 
 Allows the developer to create simple webservices based on an entities list in configuration.
@@ -16,7 +16,7 @@ Installation
 Just write this command line instruction if Composer is installed in your Symfony root directory :
 
 ```sh
-composer require pierstoval/api-bundle
+composer require orbitale/api-bundle
 ```
 
 I recommend to use Composer, as it is the best way to keep this repository update on your application.
@@ -38,15 +38,15 @@ You need to initiate some settings to make sure the bundle is configured properl
             $bundles = array(
                 // ...
                 new FOS\RestBundle\FOSRestBundle(),
-                new Pierstoval\Bundle\ApiBundle\PierstovalApiBundle(),
+                new Orbitale\Bundle\ApiBundle\OrbitaleApiBundle(),
 
     ```
 2. Import the routing in your application:
 
     ```yaml
     # app/config/routing.yml
-    pierstoval_api:
-        resource: "@PierstovalApiBundle/Controller/"
+    orbitale_api:
+        resource: "@OrbitaleApiBundle/Controller/"
         type:     annotation
         prefix:   /api/
     ```
@@ -60,7 +60,7 @@ Add your first entity in the config:
 
 ```yaml
 # app/config/config.yml
-pierstoval_api:
+orbitale_api:
     services:
         posts: { entity: AppBundle\Entity\Post }
 ```
@@ -87,13 +87,13 @@ The generator handles **GET**, **POST** (update), **PUT** (insert) and **DELETE*
 
 ### GET routes
 
-* `pierstoval_api_cget` : `/{serviceName}`
+* `orbitale_api_cget` : `/{serviceName}`
     
     This route allows to get a collection of objects of the specified entity.
     
     The received collection has the same key as the `serviceName`, and is an array of objects.
 
-* `pierstoval_api_get` : `/{serviceName}/{id}`
+* `orbitale_api_get` : `/{serviceName}/{id}`
     
     This route retrieves a single object with its primary key (even if this primary key is not called `id`). The received element will have the same key as the `serviceName` but with removed trailing 's' at the end of it (for example, `posts` will become `post`).
     
@@ -101,7 +101,7 @@ The generator handles **GET**, **POST** (update), **PUT** (insert) and **DELETE*
     
     If you need more information about exposing or not some fields, you can check [JMSSerializer's documentation](http://jmsyst.com/libs/serializer/master/reference/annotations)
 
-* `pierstoval_api_get_subrequest` : `/{serviceName}/{id}/{subElement}`
+* `orbitale_api_get_subrequest` : `/{serviceName}/{id}/{subElement}`
 
     This is the great point of this Api generator.
     
@@ -141,8 +141,8 @@ The PUT route is only used to INSERT datas.
 
 Basically, the PUT route works the same than the POST route, but it won't merge any entity in the database. It will instead fill an empty entity, validate it, and if the object is valid, persist it.
 
-* POST: `pierstoval_api_post` : `/{serviceName}/{id}`
-* PUT: `pierstoval_api_put` : `/{serviceName}`
+* POST: `orbitale_api_post` : `/{serviceName}/{id}`
+* PUT: `orbitale_api_put` : `/{serviceName}`
 
 The route will first search for an entity of `serviceName` with primary key `id`.
 
@@ -237,23 +237,10 @@ You can add other IPs or domain names in this attribute like this:
 
 ```yaml
 # app/config/config.yml
-pierstoval_api:
+orbitale_api:
     allowed_origins: 
         - 1.2.3.4
         - my.domain.com
 ```
 
 This is a _basic_ security system. If you want more security, you'll have to extend the [ApiController](Controller/ApiController.php) and override the `checkAsker` method, and also change the routing namespace to your own controller.
-
-Conclusion
--------------------------
-
-You can also view this repository [on its Packagist.org page](https://packagist.org/packages/pierstoval/api-bundle), even though it's not really useful to see.
-
-Feel free to send me a mail at pierstoval@gmail.com if you have any question !! (I LOVE questions, really, feel free to ask !)
- 
-If you find this bundle to be cool, feel free to propose improvements and send pull-requests !
-
-Thanks for reading and using !
-
-Pierstoval.

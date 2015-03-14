@@ -1,8 +1,8 @@
 <?php
 /*
-* This file is part of the PierstovalApiBundle package.
+* This file is part of the OrbitaleApiBundle package.
 *
-* (c) Alexandre "Pierstoval" Rock Ancelet <pierstoval@gmail.com>
+* (c) Alexandre Rock Ancelet <contact@orbitale.io>
 *
 * For the full copyright and license information, please view the LICENSE
 * file that was distributed with this source code.
@@ -22,8 +22,8 @@ class AppKernel extends Kernel
             new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle(),
             new FOS\RestBundle\FOSRestBundle(),
             new JMS\SerializerBundle\JMSSerializerBundle(),
-            new Pierstoval\Bundle\ApiBundle\PierstovalApiBundle(),
-            new Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\ApiDataTestBundle(),
+            new Orbitale\Bundle\ApiBundle\OrbitaleApiBundle(),
+            new Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\ApiDataTestBundle(),
         );
     }
 

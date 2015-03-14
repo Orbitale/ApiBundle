@@ -1,5 +1,5 @@
 
-pierstoval_api:
-    resource: "@PierstovalApiBundle/Controller/"
+orbitale_api:
+    resource: "@OrbitaleApiBundle/Controller/"
     type:     annotation
     prefix:   /api/

@@ -1,14 +1,14 @@
 <?php
 /*
-* This file is part of the PierstovalApiBundle package.
+* This file is part of the OrbitaleApiBundle package.
 *
-* (c) Alexandre "Pierstoval" Rock Ancelet <pierstoval@gmail.com>
+* (c) Alexandre Rock Ancelet <contact@orbitale.io>
 *
 * For the full copyright and license information, please view the LICENSE
 * file that was distributed with this source code.
 */
 
-namespace Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity;
+namespace Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as Serializer;

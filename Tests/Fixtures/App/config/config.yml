@@ -19,7 +19,7 @@ doctrine:
     dbal:
         driver:   pdo_sqlite
         host:     localhost
-        dbname:   pierstoval_api_test
+        dbname:   orbitale_api_test
         user:     root
         password: ~
         charset:  UTF8
@@ -29,11 +29,11 @@ doctrine:
         auto_mapping: true
 
 services:
-    pierstoval_api_test_controller:
-        class: Pierstoval\Bundle\ApiBundle\Controller\ApiController
+    orbitale_api_test_controller:
+        class: Orbitale\Bundle\ApiBundle\Controller\ApiController
 
-pierstoval_api:
+orbitale_api:
     allowed_origins:
         - localhost
     services:
-        data: { entity: Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData }
+        data: { entity: Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData }

@@ -1,21 +1,21 @@
 <?php
 /*
-* This file is part of the PierstovalApiBundle package.
+* This file is part of the OrbitaleApiBundle package.
 *
-* (c) Alexandre "Pierstoval" Rock Ancelet <pierstoval@gmail.com>
+* (c) Alexandre Rock Ancelet <contact@orbitale.io>
 *
 * For the full copyright and license information, please view the LICENSE
 * file that was distributed with this source code.
 */
 
-namespace Pierstoval\Bundle\ApiBundle\Tests\Fixtures;
+namespace Orbitale\Bundle\ApiBundle\Tests\Fixtures;
 
 use AppKernel;
 use Doctrine\DBAL\Schema\SchemaException;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
-use Pierstoval\Bundle\ApiBundle\Controller\ApiController;
-use Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData;
+use Orbitale\Bundle\ApiBundle\Controller\ApiController;
+use Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -30,7 +30,7 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
     /**
      * @var string
      */
-    protected $entityClass = 'Pierstoval\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData';
+    protected $entityClass = 'Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData';
 
     /**
      * @var AppKernel
@@ -70,7 +70,7 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
 
         // Store the container and the entity manager in test case properties
         $this->container  = $this->kernel->getContainer();
-        $this->controller = $this->container->get('pierstoval_api_test_controller');
+        $this->controller = $this->container->get('orbitale_api_test_controller');
         $this->em         = $this->container->get('doctrine')->getManager();
 
         $this->controller->setContainer($this->container);
@@ -92,7 +92,7 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
 
         $httpRequest = Request::create('/', $method, $parameters, $cookies, $files, $server, $content);
 
-        $httpRequest->attributes->set('_controller', 'Pierstoval\Bundle\ApiBundle\Controller\ApiController');
+        $httpRequest->attributes->set('_controller', 'Orbitale\Bundle\ApiBundle\Controller\ApiController');
 
         $this->container->set('request', $httpRequest, 'request');
 

@@ -1,17 +1,17 @@
 <?php
 /*
-* This file is part of the PierstovalApiBundle package.
+* This file is part of the OrbitaleApiBundle package.
 *
-* (c) Alexandre "Pierstoval" Rock Ancelet <pierstoval@gmail.com>
+* (c) Alexandre Rock Ancelet <contact@orbitale.io>
 *
 * For the full copyright and license information, please view the LICENSE
 * file that was distributed with this source code.
 */
 
-namespace Pierstoval\Bundle\ApiBundle\Tests\Listeners;
+namespace Orbitale\Bundle\ApiBundle\Tests\Listeners;
 
-use Pierstoval\Bundle\ApiBundle\Listeners\JsonResponseListener;
-use Pierstoval\Bundle\ApiBundle\Tests\Fixtures\AbstractTestCase;
+use Orbitale\Bundle\ApiBundle\Listeners\JsonResponseListener;
+use Orbitale\Bundle\ApiBundle\Tests\Fixtures\AbstractTestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;

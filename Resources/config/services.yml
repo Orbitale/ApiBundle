@@ -1,12 +1,12 @@
 
 services:
-    pierstoval.api.originChecker:
-        class: Pierstoval\Bundle\ApiBundle\Services\OriginChecker
+    orbitale.api.originChecker:
+        class: Orbitale\Bundle\ApiBundle\Services\OriginChecker
         arguments:
-            allowedOrigins: %pierstoval_api.allowed_origins%
+            allowedOrigins: %orbitale_api.allowed_origins%
 
-    pierstoval.api.listener:
-        class: Pierstoval\Bundle\ApiBundle\Listeners\JsonResponseListener
+    orbitale.api.listener:
+        class: Orbitale\Bundle\ApiBundle\Listeners\JsonResponseListener
         arguments:
             kernelEnvironment: %kernel.environment%
         tags:

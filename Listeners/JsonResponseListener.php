@@ -1,14 +1,14 @@
 <?php
 /*
-* This file is part of the PierstovalApiBundle package.
+* This file is part of the OrbitaleApiBundle package.
 *
-* (c) Alexandre "Pierstoval" Rock Ancelet <pierstoval@gmail.com>
+* (c) Alexandre Rock Ancelet <contact@orbitale.io>
 *
 * For the full copyright and license information, please view the LICENSE
 * file that was distributed with this source code.
 */
 
-namespace Pierstoval\Bundle\ApiBundle\Listeners;
+namespace Orbitale\Bundle\ApiBundle\Listeners;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -37,7 +37,7 @@ class JsonResponseListener implements EventSubscriberInterface {
     {
         $controller = $event->getRequest()->attributes->get('_controller');
 
-        if (strpos($controller, 'Pierstoval\Bundle\ApiBundle\Controller\ApiController') !== false) {
+        if (strpos($controller, 'Orbitale\Bundle\ApiBundle\Controller\ApiController') !== false) {
             $event->getResponse()->headers->set('Content-type', 'application/json', true);
         }
 
@@ -52,7 +52,7 @@ class JsonResponseListener implements EventSubscriberInterface {
     {
         $controller = $event->getRequest()->attributes->get('_controller');
 
-        if (strpos($controller, 'Pierstoval\Bundle\ApiBundle\Controller\ApiController') !== false) {
+        if (strpos($controller, 'Orbitale\Bundle\ApiBundle\Controller\ApiController') !== false) {
 
             // Stops any other kernel.exception listener to occur
             $event->stopPropagation();

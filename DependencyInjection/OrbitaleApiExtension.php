@@ -1,14 +1,14 @@
 <?php
 /*
-* This file is part of the PierstovalApiBundle package.
+* This file is part of the OrbitaleApiBundle package.
 *
-* (c) Alexandre "Pierstoval" Rock Ancelet <pierstoval@gmail.com>
+* (c) Alexandre Rock Ancelet <contact@orbitale.io>
 *
 * For the full copyright and license information, please view the LICENSE
 * file that was distributed with this source code.
 */
 
-namespace Pierstoval\Bundle\ApiBundle\DependencyInjection;
+namespace Orbitale\Bundle\ApiBundle\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\Loader;
  *
  * To learn more see {@link http://symfony.com/doc/current/cookbook/bundles/extension.html}
  */
-class PierstovalApiExtension extends Extension
+class OrbitaleApiExtension extends Extension
 {
     /**
      * {@inheritDoc}
@@ -40,7 +40,7 @@ class PierstovalApiExtension extends Extension
         $config['allowed_origins'] = array_unique($config['allowed_origins']);
 
         foreach ($config as $name => $value) {
-            $container->setParameter('pierstoval_api.'.$name, $value);
+            $container->setParameter('orbitale_api.'.$name, $value);
         }
 
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));

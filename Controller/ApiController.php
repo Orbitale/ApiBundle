@@ -1,18 +1,18 @@
 <?php
 /*
-* This file is part of the PierstovalApiBundle package.
+* This file is part of the OrbitaleApiBundle package.
 *
-* (c) Alexandre "Pierstoval" Rock Ancelet <pierstoval@gmail.com>
+* (c) Alexandre Rock Ancelet <contact@orbitale.io>
 *
 * For the full copyright and license information, please view the LICENSE
 * file that was distributed with this source code.
 */
 
-namespace Pierstoval\Bundle\ApiBundle\Controller;
+namespace Orbitale\Bundle\ApiBundle\Controller;
 
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Pierstoval\Component\EntityMerger\EntityMerger;
+use Orbitale\Component\EntityMerger\EntityMerger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\PersistentCollection;
@@ -37,7 +37,7 @@ class ApiController extends FOSRestController
     private $service;
 
     /**
-     * @Route("/{serviceName}", name="pierstoval_api_cget")
+     * @Route("/{serviceName}", name="orbitale_api_cget")
      * @Method({"GET"})
      *
      * @param string  $serviceName
@@ -60,8 +60,8 @@ class ApiController extends FOSRestController
     }
 
     /**
-     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, defaults={"subElement": ""}, name="pierstoval_api_get")
-     * @Route("/{serviceName}/{id}/{subElement}", requirements={"subElement": "([a-zA-Z0-9\._]/?)+", "id": "\d+"}, name="pierstoval_api_get_subrequest")
+     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, defaults={"subElement": ""}, name="orbitale_api_get")
+     * @Route("/{serviceName}/{id}/{subElement}", requirements={"subElement": "([a-zA-Z0-9\._]/?)+", "id": "\d+"}, name="orbitale_api_get_subrequest")
      * @Method({"GET"})
      *
      * @param string  $serviceName
@@ -98,7 +98,7 @@ class ApiController extends FOSRestController
     }
 
     /**
-     * @Route("/{serviceName}", requirements={"serviceName": "\w+"}, name="pierstoval_api_post")
+     * @Route("/{serviceName}", requirements={"serviceName": "\w+"}, name="orbitale_api_post")
      * @Method({"post"})
      *
      * @param string  $serviceName
@@ -142,12 +142,12 @@ class ApiController extends FOSRestController
         return $this->view(array(
             'data' => $repo->find($id),
             'path' => rtrim($serviceName, 's').'.'.$id,
-            'link' => $this->generateUrl('pierstoval_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
+            'link' => $this->generateUrl('orbitale_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
         ), 201);
     }
 
     /**
-     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="pierstoval_api_put")
+     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="orbitale_api_put")
      * @Method({"PUT"})
      *
      * @param string  $serviceName
@@ -185,12 +185,12 @@ class ApiController extends FOSRestController
         return $this->view(array(
             'data' => $repo->find($id),
             'path' => rtrim($serviceName, 's').'.'.$id,
-            'link' => $this->generateUrl('pierstoval_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
+            'link' => $this->generateUrl('orbitale_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
         ), 200);
     }
 
     /**
-     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="pierstoval_api_delete")
+     * @Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="orbitale_api_delete")
      * @Method({"DELETE"})
      *
      * @param string  $serviceName
@@ -231,7 +231,7 @@ class ApiController extends FOSRestController
     protected function getService($serviceName = null, $throwException = true)
     {
         if (!$this->services) {
-            $this->services = $this->container->getParameter('pierstoval_api.services');
+            $this->services = $this->container->getParameter('orbitale_api.services');
         }
         if (null === $serviceName && $this->service) {
             return $this->service;
@@ -260,7 +260,7 @@ class ApiController extends FOSRestController
      */
     protected function checkAsker(Request $request)
     {
-        $this->container->get('pierstoval.api.originChecker')->checkRequest($request);
+        $this->container->get('orbitale.api.originChecker')->checkRequest($request);
     }
 
     /**
@@ -290,7 +290,7 @@ class ApiController extends FOSRestController
     {
         return $this->view(array(
             'error'   => true,
-            'message' => $this->get('translator')->trans('Invalid form, please re-check.', array(), 'pierstoval_api.exceptions'),
+            'message' => $this->get('translator')->trans('Invalid form, please re-check.', array(), 'orbitale_api.exceptions'),
             'errors'  => $errors,
         ), 400);
     }
@@ -307,7 +307,7 @@ class ApiController extends FOSRestController
      */
     protected function error($message = '', $messageParams = array(), $code = 404)
     {
-        $message = $this->get('translator')->trans($message, $messageParams, 'pierstoval_api.exceptions');
+        $message = $this->get('translator')->trans($message, $messageParams, 'orbitale_api.exceptions');
 
         return $this->view(array(
             'error'   => true,
