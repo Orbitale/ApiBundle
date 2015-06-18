@@ -11,36 +11,36 @@
 namespace Orbitale\Bundle\ApiBundle\Tests\Listeners;
 
 use Orbitale\Bundle\ApiBundle\Listeners\JsonResponseListener;
-use Orbitale\Bundle\ApiBundle\Tests\Fixtures\AbstractTestCase;
+use Orbitale\Bundle\ApiBundle\Tests\Fixtures\WebTestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
-class JsonResponseListenerTest extends AbstractTestCase {
+class JsonResponseListenerTest extends WebTestCase
+{
 
-    public function testKernelEventResponse()
+    public function provideExceptionEnvs()
     {
-        $listener = new JsonResponseListener('test');
-
-        $response = new Response();
-
-        $responseEvent = new FilterResponseEvent($this->kernel, $this->createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, $response);
-
-        $listener->onResponse($responseEvent);
-
-        $this->assertEquals('application/json', $response->headers->get('Content-type'));
+        return array(
+            array('Test exception', false, 666),
+            array('Dev exception', true, -1),
+        );
     }
 
     /**
      * @dataProvider provideExceptionEnvs
      */
-    public function testKernelEventException($exceptionMessage, $env, $exceptionCode)
+    public function testKernelEventException($exceptionMessage, $debug, $exceptionCode)
     {
-        $listener = new JsonResponseListener($env);
+        $kernel = $this->createKernel(array('debug' => $debug));
+        $kernel->boot();
 
-        $exceptionEvent = new GetResponseForExceptionEvent($this->kernel, $this->createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, new \Exception($exceptionMessage, $exceptionCode));
+        $listener = new JsonResponseListener($debug);
+
+        $exceptionEvent = new GetResponseForExceptionEvent($kernel, $this->createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, new \Exception($exceptionMessage, $exceptionCode));
 
         $listener->onException($exceptionEvent);
 
@@ -49,9 +49,9 @@ class JsonResponseListenerTest extends AbstractTestCase {
         $this->assertInstanceOf('Symfony\Component\HttpFoundation\JsonResponse', $response);
 
         if ($response instanceof JsonResponse) {
-            $content = json_decode($response->getContent(), true);
+            $content     = json_decode($response->getContent(), true);
             $jsonLastErr = json_last_error();
-            $jsonMsg = $this->parseJsonMsg($jsonLastErr);
+            $jsonMsg     = $this->parseJsonMsg($jsonLastErr);
 
             $this->assertEquals(JSON_ERROR_NONE, $jsonLastErr, "\nERROR! Invalid response, json error:\n> ".$jsonLastErr.$jsonMsg);
             if (null !== $content) {
@@ -61,7 +61,7 @@ class JsonResponseListenerTest extends AbstractTestCase {
                 $this->assertEquals(true, isset($content['error']) ? $content['error'] : false);
                 $this->assertEquals($exceptionMessage, isset($content['message']) ? $content['message'] : null);
                 $this->assertEquals($exceptionCode, isset($content['exception']['code']) ? $content['exception']['code'] : null);
-                if ($env === 'dev') {
+                if ($debug) {
                     $this->assertArrayHasKey('exception_trace', $content);
                     $this->assertGreaterThan(0, count(isset($content['exception_trace']) ? $content['exception_trace'] : array()));
                 } else {
@@ -71,12 +71,20 @@ class JsonResponseListenerTest extends AbstractTestCase {
         }
     }
 
-    public function provideExceptionEnvs()
+    public function testKernelEventResponse()
     {
-        return array(
-            array('Test exception', 'test', 666),
-            array('Dev exception', 'dev', -1),
-        );
+        $kernel = $this->createKernel();
+        $kernel->boot();
+
+        $listener = new JsonResponseListener('test');
+
+        $response = new Response();
+
+        $responseEvent = new FilterResponseEvent($kernel, $this->createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, $response);
+
+        $listener->onResponse($responseEvent);
+
+        $this->assertEquals('application/json', $response->headers->get('Content-type'));
     }
 
     public function testEventsList()
@@ -88,4 +96,34 @@ class JsonResponseListenerTest extends AbstractTestCase {
         $this->assertCount(2, $list);
     }
 
+    /**
+     * Creates a HTTP Request object to be checked in the API
+     *
+     * @param string $method     The HTTP method
+     * @param array  $parameters The query (GET) or request (POST) parameters
+     * @param array  $cookies    The request cookies ($_COOKIE)
+     * @param array  $files      The request files ($_FILES)
+     * @param array  $server     The server parameters ($_SERVER)
+     * @param string $content    The raw body data
+     *
+     * @see Request
+     *
+     * @return Request
+     */
+    public function createRequest($method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $server = array(), $content = null)
+    {
+        $this->getContainer()->enterScope('request');
+
+        $server = array_replace(array(
+            'HTTP_ORIGIN' => 'http://localhost/',
+        ), $server);
+
+        $httpRequest = Request::create('/', $method, $parameters, $cookies, $files, $server, $content);
+
+        $httpRequest->attributes->set('_controller', 'Orbitale\Bundle\ApiBundle\Controller\ApiController');
+
+        $this->getContainer()->set('request', $httpRequest, 'request');
+
+        return $httpRequest;
+    }
 }

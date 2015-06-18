@@ -20,7 +20,6 @@ class AppKernel extends Kernel
             new Symfony\Bundle\TwigBundle\TwigBundle(),
             new Doctrine\Bundle\DoctrineBundle\DoctrineBundle(),
             new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle(),
-            new FOS\RestBundle\FOSRestBundle(),
             new JMS\SerializerBundle\JMSSerializerBundle(),
             new Orbitale\Bundle\ApiBundle\OrbitaleApiBundle(),
             new Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\ApiDataTestBundle(),
@@ -37,7 +36,7 @@ class AppKernel extends Kernel
      */
     public function getCacheDir()
     {
-        return __DIR__.'/../../../vendor/_test_logs/cache';
+        return __DIR__.'/../../../build/_test_kernel/'.$this->getEnvironment().'/cache';
     }
 
     /**
@@ -45,6 +44,6 @@ class AppKernel extends Kernel
      */
     public function getLogDir()
     {
-        return __DIR__.'/../../../vendor/_test_logs/logs';
+        return __DIR__.'/../../../build/_test_kernel/'.$this->getEnvironment().'/logs';
     }
 }
