@@ -38,7 +38,6 @@ You need to initiate some settings to make sure the bundle is configured properl
         public function registerBundles() {
             $bundles = array(
                 // ...
-                new FOS\RestBundle\FOSRestBundle(),
                 new Orbitale\Bundle\ApiBundle\OrbitaleApiBundle(),
 
     ```

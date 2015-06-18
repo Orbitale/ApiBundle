@@ -21,11 +21,11 @@ class JsonResponseListener implements EventSubscriberInterface {
     /**
      * @var string
      */
-    private $environment;
+    private $debug;
 
-    public function __construct($environment)
+    public function __construct($debug)
     {
-        $this->environment = $environment;
+        $this->debug = $debug;
     }
 
     /**
@@ -67,7 +67,7 @@ class JsonResponseListener implements EventSubscriberInterface {
                 ),
             );
 
-            if ($this->environment === 'dev') {
+            if ($this->debug) {
                 $data['exception_trace']['file'] = $e->getFile();
                 $data['exception_trace']['line'] = $e->getLine();
                 $data['exception_trace']['traceAsString'] = $e->getTraceAsString();

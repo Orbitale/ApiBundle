@@ -8,6 +8,6 @@ services:
     orbitale.api.listener:
         class: Orbitale\Bundle\ApiBundle\Listeners\JsonResponseListener
         arguments:
-            kernelEnvironment: %kernel.environment%
+            kernelEnvironment: %kernel.debug%
         tags:
             - { name: kernel.event_subscriber }

@@ -16,7 +16,6 @@
         "doctrine/orm": "~2.2,>=2.2.3",
         "doctrine/doctrine-bundle": "~1.2",
         "sensio/framework-extra-bundle": "~3.0",
-        "friendsofsymfony/rest-bundle": "~1.0",
         "orbitale/entity-merger": "~0.3",
         "jms/serializer": ">=0.16,<1",
         "jms/serializer-bundle": "~0.13"

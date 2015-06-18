@@ -16,10 +16,10 @@ use Orbitale\Component\EntityMerger\EntityMerger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\PersistentCollection;
-use FOS\RestBundle\Controller\FOSRestController;
-use FOS\RestBundle\View\View;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,8 +31,9 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 /**
  * @Route("/", requirements={"serviceName":"([a-zA-Z0-9\._]?)+"})
  */
-class ApiController extends FOSRestController
+class ApiController extends Controller
 {
+
     private $services;
     private $service;
 
@@ -43,7 +44,7 @@ class ApiController extends FOSRestController
      * @param string  $serviceName
      * @param Request $request
      *
-     * @return View|Response
+     * @return JsonResponse
      */
     public function cgetAction($serviceName, Request $request)
     {
@@ -53,7 +54,7 @@ class ApiController extends FOSRestController
 
         $datas = $this->getDoctrine()->getManager()->getRepository($service['entity'])->findAll();
 
-        return $this->view(array(
+        return $this->response(array(
             'data' => $datas,
             'path' => $serviceName,
         ), count($datas) ? 200 : 204);
@@ -69,7 +70,7 @@ class ApiController extends FOSRestController
      * @param string  $subElement
      * @param Request $request
      *
-     * @return View|Response
+     * @return JsonResponse
      */
     public function getAction($serviceName, $id, $subElement = null, Request $request)
     {
@@ -94,7 +95,7 @@ class ApiController extends FOSRestController
             return $this->error('No item found with this identifier.');
         }
 
-        return $this->view(array('data' => $data, 'path' => $key));
+        return $this->response(array('data' => $data, 'path' => $key));
     }
 
     /**
@@ -104,7 +105,7 @@ class ApiController extends FOSRestController
      * @param string  $serviceName
      * @param Request $request
      *
-     * @return View|Response
+     * @return JsonResponse
      */
     public function postAction($serviceName, Request $request)
     {
@@ -139,7 +140,7 @@ class ApiController extends FOSRestController
         // Get the new object ID for full refresh
         $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
 
-        return $this->view(array(
+        return $this->response(array(
             'data' => $repo->find($id),
             'path' => rtrim($serviceName, 's').'.'.$id,
             'link' => $this->generateUrl('orbitale_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
@@ -154,7 +155,7 @@ class ApiController extends FOSRestController
      * @param integer $id
      * @param Request $request
      *
-     * @return View|Response
+     * @return JsonResponse
      */
     public function putAction($serviceName, $id, Request $request)
     {
@@ -182,7 +183,7 @@ class ApiController extends FOSRestController
         $em->flush();
 
         // We retrieve back the object from the database to get it full with relations
-        return $this->view(array(
+        return $this->response(array(
             'data' => $repo->find($id),
             'path' => rtrim($serviceName, 's').'.'.$id,
             'link' => $this->generateUrl('orbitale_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
@@ -197,7 +198,7 @@ class ApiController extends FOSRestController
      * @param integer $id
      * @param Request $request
      *
-     * @return View|Response
+     * @return JsonResponse
      */
     public function deleteAction($serviceName, $id, Request $request)
     {
@@ -216,7 +217,7 @@ class ApiController extends FOSRestController
         $em->remove($data);
         $em->flush();
 
-        return $this->view(array('data' => $data, 'path' => rtrim($serviceName, 's').'.'.$id));
+        return $this->response(array('data' => $data, 'path' => rtrim($serviceName, 's').'.'.$id));
     }
 
     /**
@@ -241,7 +242,7 @@ class ApiController extends FOSRestController
             return $this->services[$serviceName];
         }
         if ($throwException) {
-            if ($this->container->get('kernel')->getEnvironment() === 'prod') {
+            if (!$this->container->get('kernel')->isDebug()) {
                 throw new \InvalidArgumentException($this->get('translator')->trans('Unrecognized service %service%', array('%service%' => $serviceName,)), 1);
             } else {
                 throw new \InvalidArgumentException($this->get('translator')->trans(
@@ -264,31 +265,30 @@ class ApiController extends FOSRestController
     }
 
     /**
-     * Returns a view by serializing its data, thanks to the FOSRestController
+     * Returns a view by serializing its data
      *
      * @param mixed   $data
      * @param integer $statusCode
      * @param array   $headers
      *
-     * @return View|Response
+     * @return Response
      */
-    protected function view($data = null, $statusCode = null, array $headers = Array())
+    protected function response($data = null, $statusCode = null, array $headers = Array())
     {
-        $view = parent::view($data, $statusCode, $headers);
-        $view->setFormat('json');
-        $view->setHeader('Content-type', 'application/json; charset=utf-8');
+        $headers['Content-Type'] = 'application/json; charset=utf-8';
+        $response = new JsonResponse($data, $statusCode ?: 200, $headers);
 
-        return $this->handleView($view);
+        return $response;
     }
 
     /**
      * @param ConstraintViolationListInterface $errors
      *
-     * @return View|Response
+     * @return Response
      */
     protected function validationError(ConstraintViolationListInterface $errors)
     {
-        return $this->view(array(
+        return $this->response(array(
             'error'   => true,
             'message' => $this->get('translator')->trans('Invalid form, please re-check.', array(), 'orbitale_api.exceptions'),
             'errors'  => $errors,
@@ -303,13 +303,13 @@ class ApiController extends FOSRestController
      * @param array  $messageParams
      * @param int    $code
      *
-     * @return View
+     * @return JsonResponse
      */
     protected function error($message = '', $messageParams = array(), $code = 404)
     {
         $message = $this->get('translator')->trans($message, $messageParams, 'orbitale_api.exceptions');
 
-        return $this->view(array(
+        return $this->response(array(
             'error'   => true,
             'message' => $message,
         ), $code);
