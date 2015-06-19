@@ -86,16 +86,39 @@ class WebTestCase extends BaseWebTestCase
             'HTTP_ORIGIN' => 'http://localhost/',
         ), $server);
 
-
         $client->setServerParameters($server);
 
         return $client;
     }
 
     /**
-     * Generates fixtures to be tested in the different test cases.
+     * Get the ids of the fixtures stored in the test database
      *
      * @return array
+     */
+    public function getExpectedFixturesIds()
+    {
+        return array_keys(static::$entityFixtures);
+    }
+
+    /**
+     * Get fixtures as an array, without their id.
+     *
+     * @return array
+     */
+    protected function getFixturesArray()
+    {
+        if (!count(static::$arrayFixtures)) {
+            $this->getFixtures();
+        }
+
+        return static::$arrayFixtures;
+    }
+
+    /**
+     * Generates fixtures to be tested in the different test cases.
+     *
+     * @return ApiData[]
      */
     protected function generateFixtures()
     {
@@ -118,6 +141,7 @@ class WebTestCase extends BaseWebTestCase
             array('name' => 'Second one', 'value' => $length, 'hidden' => 'And another long text (care, it\'s long):'.$randomString),
         );
         $this->persistFixtures();
+
         return static::$entityFixtures;
     }
 
@@ -126,10 +150,10 @@ class WebTestCase extends BaseWebTestCase
      */
     private function persistFixtures()
     {
-        $kernel = static::$kernel;
+        $kernel = static::getKernel();;
 
         if (!$kernel || !static::$arrayFixtures) {
-            return;
+            throw new \RuntimeException('Error before persisting fixtures...');
         }
 
         /** @var EntityManager $em */
@@ -148,14 +172,21 @@ class WebTestCase extends BaseWebTestCase
 
         $repo = $em->getRepository('Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData');
 
-        static::$entityFixtures = $repo->findAll();
+        /** @var ApiData[] $entityFixtures */
+        $entityFixtures = $repo->findAll();
+
+        static::$entityFixtures = array();
+
+        foreach ($entityFixtures as $fixture) {
+            static::$entityFixtures[$fixture->getId()] = $fixture;
+        }
     }
 
     /**
      * Converts a JSON_ERROR_* code into the associated message.
      * Mostly for PHP5.3 and PHP5.4, in which the `json_last_error_msg()` does not exist.
      *
-     * @param $jsonLastErr
+     * @param integer $jsonLastErr
      *
      * @return string
      */

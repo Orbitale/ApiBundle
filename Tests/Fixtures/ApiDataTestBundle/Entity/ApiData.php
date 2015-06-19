@@ -134,7 +134,7 @@ class ApiData
      */
     public function custom()
     {
-        return 'custom-value';
+        return 'custom-value-'.$this->id;
     }
 
 }

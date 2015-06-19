@@ -18,6 +18,36 @@ class ApiControllerTest extends WebTestCase
 {
 
     /**
+     * Sends a request to the controller and get its response content.
+     * Some asserts are made here because we only check for successful requests here.
+     *
+     * @param string  $uri
+     * @param string  $method
+     * @param array   $parameters
+     * @param integer $expectedCode
+     *
+     * @return array
+     */
+    protected function sendRequest($uri, $method = 'GET', array $parameters = array(), $expectedCode = 200)
+    {
+        $client = static::createClient();
+
+        $client->request($method, '/api/'.$uri, $parameters, array(), array('HTTP_ACCEPT' => 'application/json'));
+
+        $response = $client->getResponse();
+
+        $this->assertInstanceOf('Symfony\Component\HttpFoundation\JsonResponse', $response);
+
+        if ($response instanceof JsonResponse) {
+            $datas = $this->getResponseContent($response, $expectedCode);
+            $this->assertArrayNotHasKey('error', $datas);
+            return $datas;
+        }
+
+        throw new \RuntimeException('Unknown error in sending request.');
+    }
+
+    /**
      * @param Response $response
      * @param int      $expectedCode
      *
@@ -27,9 +57,12 @@ class ApiControllerTest extends WebTestCase
     {
         $this->assertEquals($expectedCode, $response->getStatusCode());
         $this->assertContains('application/json', $response->headers->get('Content-type'));
-        $this->assertNotEmpty($response->getContent());
 
         $json = json_decode($response->getContent(), true);
+
+        dump($response);
+
+        $this->assertNotEmpty($json);
 
         $jsonLastErr = json_last_error();
         $jsonMsg = $this->parseJsonMsg($jsonLastErr);
@@ -44,10 +77,12 @@ class ApiControllerTest extends WebTestCase
         $objects = $this->getEm()->getRepository($this->entityClass)->findAll();
         $this->assertEmpty($objects);
 
-        $this->generateFixtures();
+        $this->getFixtures();
     }
 
     /**
+     * Test that the controller throws a proper exception message depending on the `kernel.debug` parameter.
+     *
      * @dataProvider provideWrongServices
      */
     public function testWrongService($debug, $expectedExceptionMessage)
@@ -80,40 +115,16 @@ class ApiControllerTest extends WebTestCase
 
     public function atestCget()
     {
-        $response = $this->controller->cgetAction('data', $this->createRequest());
+        $datas = $this->sendRequest('data');
 
-        $ids = $this->getExpectedFixturesIds();
+        $fixtures = $this->getFixtures();
 
-        $this->assertInstanceOf('Symfony\Component\HttpFoundation\Response', $response);
-
-        if ($response instanceof Response) {
-            $content = $this->getResponseContent($response);
-            $this->assertArrayHasKey('data', $content);
-            $this->assertCount(count($this->entityFixtures), isset($content['data']) ? $content['data'] : array());
-            foreach ($ids as $id) {
-                $id = current($id) - 1;
-                $data = array_key_exists($id, $content['data']) ? $content['data'][$id] : null;
-                $this->assertNotNull($data);
-                if (null !== $data) {
-                    dump($this->entityFixtures);
-                    $this->assertEquals($data['name'], $this->entityFixtures[$id]['name']);
-                    $this->assertEquals($data['value'], $this->entityFixtures[$id]['value']);
-                    $this->assertArrayHasKey('id', $data);
-                    $this->assertArrayNotHasKey('hidden', $data);
-                }
-            }
+        $this->assertCount(count($fixtures), isset($content['data']) ? $content['data'] : array());
+        foreach ($datas as $data) {
+            $this->assertArrayHasKey($data['id'], $fixtures);
+            $fixture = $fixtures[$data['id']];
+            $this->assertEquals(@$data['name'], $fixture->getName());
         }
-    }
-
-    public function getExpectedFixturesIds()
-    {
-        $ids = array();
-
-        foreach ($this->entityFixtures as $key => $fixture) {
-            $ids[] = array($key + 1);
-        }
-
-        return $ids;
     }
 
     /**
@@ -128,7 +139,6 @@ class ApiControllerTest extends WebTestCase
         if ($response instanceof Response) {
             $content = $this->getResponseContent($response);
             $this->assertArrayHasKey('data', $content);
-            dump($content);
             $this->assertCount(4, isset($content['data']) ? $content['data'] : array());
             $data = isset($content['data']) ? $content['data'] : array();
             if (count($data)) {
@@ -205,8 +215,6 @@ class ApiControllerTest extends WebTestCase
 
         $data = @$content['data'];
 
-        dump($content);
-
         $this->assertEquals(4, @$data['id']);
         $this->assertEquals('new name', @$data['name']);
         $this->assertEquals(10, @$data['value']);
@@ -237,7 +245,6 @@ class ApiControllerTest extends WebTestCase
         $this->assertArrayHasKey('path', $content);
         $this->assertArrayHasKey('link', $content);
 
-        dump($content);
         $data = @$content['data'];
 
         $this->assertEquals(4, @$data['id']);
@@ -288,7 +295,6 @@ class ApiControllerTest extends WebTestCase
 
         $content = $this->getResponseContent($response, 400);
 
-        dump($content);
         $this->assertTrue(@$content['error']);
         $this->assertEquals('Invalid form, please re-check.', @$content['message']);
 

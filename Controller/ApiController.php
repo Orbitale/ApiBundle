@@ -276,7 +276,7 @@ class ApiController extends Controller
     protected function response($data = null, $statusCode = null, array $headers = Array())
     {
         $headers['Content-Type'] = 'application/json; charset=utf-8';
-        $response = new JsonResponse($data, $statusCode ?: 200, $headers);
+        $response = new JsonResponse($this->container->get('jms_serializer')->serialize($data, 'json'), $statusCode ?: 200, $headers);
 
         return $response;
     }
