@@ -22,7 +22,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
@@ -271,12 +270,12 @@ class ApiController extends Controller
      * @param integer $statusCode
      * @param array   $headers
      *
-     * @return Response
+     * @return JsonResponse
      */
     protected function response($data = null, $statusCode = null, array $headers = Array())
     {
         $headers['Content-Type'] = 'application/json; charset=utf-8';
-        $response = new JsonResponse($this->container->get('jms_serializer')->serialize($data, 'json'), $statusCode ?: 200, $headers);
+        $response = new JsonResponse(json_decode($this->container->get('jms_serializer')->serialize($data, 'json'), true), $statusCode ?: 200, $headers);
 
         return $response;
     }
@@ -284,7 +283,7 @@ class ApiController extends Controller
     /**
      * @param ConstraintViolationListInterface $errors
      *
-     * @return Response
+     * @return JsonResponse
      */
     protected function validationError(ConstraintViolationListInterface $errors)
     {

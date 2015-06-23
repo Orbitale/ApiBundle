@@ -98,7 +98,9 @@ class WebTestCase extends BaseWebTestCase
      */
     public function getExpectedFixturesIds()
     {
-        return array_keys(static::$entityFixtures);
+        $this->generateFixtures();
+        $ids = array_keys(static::$entityFixtures);
+        return array_map(function($e){return array($e);}, $ids);
     }
 
     /**
@@ -109,7 +111,7 @@ class WebTestCase extends BaseWebTestCase
     protected function getFixturesArray()
     {
         if (!count(static::$arrayFixtures)) {
-            $this->getFixtures();
+            $this->generateFixtures();
         }
 
         return static::$arrayFixtures;
@@ -146,11 +148,32 @@ class WebTestCase extends BaseWebTestCase
     }
 
     /**
+     * Reloads all fixtures objects and arrays from the database in the static attributes
+     */
+    protected function reloadFixtures()
+    {
+        static::$entityFixtures = static::$arrayFixtures = array();
+
+        /** @var EntityManager $em */
+        $em = $this->getKernel()->getContainer()->get('doctrine')->getManager();
+        $repo = $em->getRepository('Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData');
+
+        /** @var ApiData[] $entityFixtures */
+        $entityFixtures = $repo->findAll();
+
+        static::$entityFixtures = array();
+
+        foreach ($entityFixtures as $fixture) {
+            static::$entityFixtures[$fixture->getId()] = $fixture;
+        }
+    }
+
+    /**
      * Persist the fixtures in the database to allow retrieving objects from the webservices
      */
     private function persistFixtures()
     {
-        $kernel = static::getKernel();;
+        $kernel = static::getKernel();
 
         if (!$kernel || !static::$arrayFixtures) {
             throw new \RuntimeException('Error before persisting fixtures...');
@@ -170,16 +193,7 @@ class WebTestCase extends BaseWebTestCase
         }
         $em->flush();
 
-        $repo = $em->getRepository('Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData');
-
-        /** @var ApiData[] $entityFixtures */
-        $entityFixtures = $repo->findAll();
-
-        static::$entityFixtures = array();
-
-        foreach ($entityFixtures as $fixture) {
-            static::$entityFixtures[$fixture->getId()] = $fixture;
-        }
+        $this->reloadFixtures();
     }
 
     /**

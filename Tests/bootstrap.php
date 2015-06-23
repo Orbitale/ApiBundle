@@ -11,10 +11,9 @@
 use Doctrine\Bundle\DoctrineBundle\Command\CreateDatabaseDoctrineCommand;
 use Doctrine\Bundle\DoctrineBundle\Command\Proxy\CreateSchemaDoctrineCommand;
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Orbitale\Bundle\ApiBundle\Tests\Fixtures\WebTestCase;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 $file = __DIR__ . '/../vendor/autoload.php';
 if (!file_exists($file)) {
@@ -53,11 +52,11 @@ $application = new Application($kernel);
 // Create database
 $command = new CreateDatabaseDoctrineCommand();
 $application->add($command);
-$command->run(new ArrayInput(array('command' => 'doctrine:database:create')), new NullOutput());
+$command->run(new ArrayInput(array('command' => 'doctrine:database:create')), new ConsoleOutput());
 
 // Create database schema
 $command = new CreateSchemaDoctrineCommand();
 $application->add($command);
-$command->run(new ArrayInput(array('command' => 'doctrine:schema:create')), new NullOutput());
+$command->run(new ArrayInput(array('command' => 'doctrine:schema:create')), new ConsoleOutput());
 
 $kernel->shutdown();
