@@ -30,19 +30,9 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-                ->arrayNode('allowed_origins')
-                    ->defaultValue(array())
-                    ->prototype('scalar')->cannotBeEmpty()->isRequired()->end()
-                ->end()
-                ->arrayNode('services')
-                    ->useAttributeAsKey('name', false)
-                    ->prototype('array')
-                        ->children()
-                            ->scalarNode('name')->end()
-                            ->scalarNode('entity')->end()
-                        ->end()
-                    ->end()
-            ->end();
+                ->variableNode('services')->defaultValue([])->ééééend()
+            ->end()
+        ;
 
         return $treeBuilder;
     }

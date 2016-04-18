@@ -30,14 +30,15 @@ class OrbitaleApiExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        if (isset($config['services'])) {
+        dump($config);exit;
+
+        /*
+        if (array_key_exists('services', $config)) {
             foreach ($config['services'] as $name => $v) {
                 $config['services'][$name]['name'] = $name;
             }
         }
-
-        // Remove duplicates in case of multiple configurations
-        $config['allowed_origins'] = array_unique($config['allowed_origins']);
+        */
 
         foreach ($config as $name => $value) {
             $container->setParameter('orbitale_api.'.$name, $value);

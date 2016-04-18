@@ -16,7 +16,8 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
-class JsonResponseListener implements EventSubscriberInterface {
+class JsonResponseListener implements EventSubscriberInterface
+{
 
     /**
      * @var string
@@ -29,6 +30,17 @@ class JsonResponseListener implements EventSubscriberInterface {
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public static function getSubscribedEvents()
+    {
+        return [
+            KernelEvents::RESPONSE  => ['onResponse', 1],
+            KernelEvents::EXCEPTION => ['onException', 1],
+        ];
+    }
+
+    /**
      * Will force any response with the ApiController to have an "application/json" format
      *
      * @param FilterResponseEvent $event
@@ -37,7 +49,7 @@ class JsonResponseListener implements EventSubscriberInterface {
     {
         $controller = $event->getRequest()->attributes->get('_controller');
 
-        if (strpos($controller, 'Orbitale\Bundle\ApiBundle\Controller\ApiController') !== false) {
+        if ($this->checkControllerClass($controller)) {
             $event->getResponse()->headers->set('Content-type', 'application/json', true);
         }
 
@@ -52,42 +64,52 @@ class JsonResponseListener implements EventSubscriberInterface {
     {
         $controller = $event->getRequest()->attributes->get('_controller');
 
-        if (strpos($controller, 'Orbitale\Bundle\ApiBundle\Controller\ApiController') !== false) {
-
-            // Stops any other kernel.exception listener to occur
-            $event->stopPropagation();
+        if ($this->checkControllerClass($controller)) {
 
             $e = $event->getException();
 
-            $data = array(
+            // Add all exceptions in the output data.
+            $data = [
                 'error' => true,
-                'message' => $e->getMessage(),
-                'exception' => array(
-                    'code' => $e->getCode(),
-                ),
-            );
+                'data'  => [],
+            ];
 
-            if ($this->debug) {
-                $data['exception_trace']['file'] = $e->getFile();
-                $data['exception_trace']['line'] = $e->getLine();
-                $data['exception_trace']['traceAsString'] = $e->getTraceAsString();
-                $data['exception_trace']['trace'] = $e->getTrace();
-            }
+            do {
+                $current = [
+                    'message' => $e->getMessage(),
+                    'code'    => $e->getCode(),
+                ];
+
+                // Add more informations while in debug mode.
+                if ($this->debug) {
+                    $current['file']     = $e->getFile();
+                    $current['line']     = $e->getLine();
+                    $current['asString'] = $e->getTraceAsString();
+                    $current['full']     = $e->getTrace();
+                }
+
+                $data['data'] = $current;
+            } while ($e = $e->getPrevious());
+
+            $code = 500;
+            // TODO: Add support to change the code depending on the exception.
 
             // Set a proper new response which will be JSON automatically
-            $event->setResponse(new JsonResponse($data, 500));
+            $event->setResponse(new JsonResponse($data, $code));
         }
     }
 
     /**
-     * {@inheritdoc
+     * Checks that the provided class is an instance of Orbitale's controller.
+     *
+     * @param string $controller
+     *
+     * @return bool
      */
-    public static function getSubscribedEvents()
+    private function checkControllerClass($controller)
     {
-        return array(
-            KernelEvents::RESPONSE => array('onResponse', 1),
-            KernelEvents::EXCEPTION => array('onException', 1),
-        );
-    }
+        $orbitaleController = 'Orbitale\Bundle\ApiBundle\Controller\ApiController';
 
+        return $controller === $orbitaleController || is_subclass_of($controller, $orbitaleController);
+    }
 }

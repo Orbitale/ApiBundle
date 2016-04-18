@@ -1,13 +1,9 @@
 
 services:
-    orbitale.api.originChecker:
-        class: Orbitale\Bundle\ApiBundle\Services\OriginChecker
-        arguments:
-            allowedOrigins: %orbitale_api.allowed_origins%
 
-    orbitale.api.listener:
+    orbitale.api.json_response.listener:
         class: Orbitale\Bundle\ApiBundle\Listeners\JsonResponseListener
         arguments:
-            kernelEnvironment: %kernel.debug%
+            kernelEnvironment: "%kernel.debug%"
         tags:
             - { name: kernel.event_subscriber }
