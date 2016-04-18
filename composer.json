@@ -16,7 +16,7 @@
         "doctrine/common": "^2.4.0",
         "doctrine/doctrine-bundle": "~1.2",
         "doctrine/orm": "~2.3",
-        "sensio/distribution-bundle": "~~3.0|~4.0|~5.0",
+        "sensio/distribution-bundle": "~3.0|~4.0|~5.0",
         "sensio/framework-extra-bundle": "~3.0,>=3.0.2",
         "symfony/config": "~2.8|~3.0",
         "symfony/dependency-injection": "~2.8|~3.0",
