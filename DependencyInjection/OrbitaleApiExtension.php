@@ -57,6 +57,8 @@ class OrbitaleApiExtension extends Extension
                 throw new InvalidConfigurationException('Service names for the API cannot be numeric.');
             }
 
+            $serviceConfig['name'] = $serviceName;
+
             // Normalize services one by one
             $serviceConfig = $this->normalizeOneService($serviceName, $serviceConfig);
 
@@ -139,6 +141,8 @@ class OrbitaleApiExtension extends Extension
                         $entityName, $formTypeClass, $entityConfig['form_type']
                     ));
                 }
+            } else {
+                $entityConfig['form_type'] = null;
             }
 
             $normalizedEntities[$entityName] = $entityConfig;
