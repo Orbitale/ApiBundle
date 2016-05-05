@@ -41,7 +41,7 @@ class JsonResponseListener implements EventSubscriberInterface
     }
 
     /**
-     * Will force any response with the ApiController to have an "application/json" format
+     * Will force any response with the ApiController to have an "application/json" format.
      *
      * @param FilterResponseEvent $event
      */
@@ -56,7 +56,9 @@ class JsonResponseListener implements EventSubscriberInterface
     }
 
     /**
-     * Helps throwing exceptions with the ApiController, by transforming the exception into a JSON object
+     * Helps throwing exceptions with the ApiController, by transforming the exception into a JSON object.
+     *
+     * @todo Add specific exceptions classes.
      *
      * @param GetResponseForExceptionEvent $event
      */
@@ -91,8 +93,8 @@ class JsonResponseListener implements EventSubscriberInterface
                 $data['data'] = $current;
             } while ($e = $e->getPrevious());
 
-            $code = 500;
             // TODO: Add support to change the code depending on the exception.
+            $code = 500;
 
             // Set a proper new response which will be JSON automatically
             $event->setResponse(new JsonResponse($data, $code));
@@ -108,8 +110,6 @@ class JsonResponseListener implements EventSubscriberInterface
      */
     private function checkControllerClass($controller)
     {
-        $orbitaleController = 'Orbitale\Bundle\ApiBundle\Controller\ApiController';
-
-        return $controller === $orbitaleController || is_subclass_of($controller, $orbitaleController);
+        return is_a($controller, 'Orbitale\Bundle\ApiBundle\Controller\ApiController', true);
     }
 }
