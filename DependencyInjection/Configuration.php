@@ -30,7 +30,11 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-                ->variableNode('services')->defaultValue([])->ééééend()
+                ->variableNode('services')
+                    ->treatNullLike([])
+                    ->treatFalseLike([])
+                    ->treatTrueLike([])
+                ->end()
             ->end()
         ;
 
