@@ -12,7 +12,6 @@ namespace Orbitale\Bundle\ApiBundle\Controller;
 
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Orbitale\Component\EntityMerger\EntityMerger;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\PersistentCollection;
@@ -28,14 +27,41 @@ use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
-/**
- * @Route("/", requirements={"serviceName":"([a-zA-Z0-9\._]?)+"})
- */
 class ApiController extends Controller
 {
 
-    private $services;
-    private $service;
+    /**
+     * @Route("/", name="orbitale_api_index")
+     * @Method({"GET"})
+     */
+    public function indexAction()
+    {
+        $services = $this->container->getParameter('orbitale_api.services');
+
+        $output = [
+            'error' => false,
+            'info'  => $this->get('translator')->trans('services_list'),
+            'data'  => [],
+        ];
+
+        foreach ($services as $serviceName => $service) {
+            $serviceData = [
+                'name' => $serviceName,
+                'url' => $this->generateUrl('orbitale_api_cget', ['serviceName' => $serviceName]),
+                'entities' => [],
+            ];
+            foreach ($service['entities'] as $entityName => $entity) {
+                $serviceData['entities'][] = [
+                    'name' => $entityName,
+                    'url' => $this->generateUrl('orbitale_api_cget', ['serviceName' => $serviceName, 'entity' => $entityName]),
+                    'uses_form' => (bool) $entity['form_type'],
+                ];
+            }
+            $output['data'][] = $serviceData;
+        }
+
+        return new JsonResponse($output);
+    }
 
     /**
      * @Route("/{serviceName}", name="orbitale_api_cget")
@@ -48,11 +74,10 @@ class ApiController extends Controller
      */
     public function cgetAction($serviceName, Request $request)
     {
-        $this->checkAsker($request);
-
         $service = $this->getService($serviceName);
 
-        $datas = $this->getDoctrine()->getManager()->getRepository($service['entity'])->findAll();
+        $repo = $this->getDoctrine()->getManager()->getRepository($service['entity']);
+        $datas = $repo->findAll();
 
         return $this->response(array(
             'data' => $datas,
@@ -254,14 +279,6 @@ class ApiController extends Controller
             }
         }
         return null;
-    }
-
-    /**
-     * @param Request $request
-     */
-    protected function checkAsker(Request $request)
-    {
-        $this->container->get('orbitale.api.originChecker')->checkRequest($request);
     }
 
     /**
