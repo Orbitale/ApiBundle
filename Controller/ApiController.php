@@ -161,13 +161,12 @@ class ApiController extends Controller
      * @Method({"GET"})
      *
      * @param string  $serviceName
-     * @param         $entity
+     * @param string  $entity
      * @param integer $id
-     * @param Request $request
      *
      * @return JsonResponse
      */
-    public function getAction($serviceName, $entity, $id, Request $request)
+    public function getAction($serviceName, $entity, $id)
     {
         $this->initialize($serviceName, $entity);
 
