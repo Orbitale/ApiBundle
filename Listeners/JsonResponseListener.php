@@ -1,12 +1,12 @@
 <?php
 /*
-* This file is part of the OrbitaleApiBundle package.
-*
-* (c) Alexandre Rock Ancelet <contact@orbitale.io>
-*
-* For the full copyright and license information, please view the LICENSE
-* file that was distributed with this source code.
-*/
+ * This file is part of the OrbitaleApiBundle package.
+ *
+ * (c) Alexandre Rock Ancelet <contact@orbitale.io>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace Orbitale\Bundle\ApiBundle\Listeners;
 
@@ -14,6 +14,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 class JsonResponseListener implements EventSubscriberInterface
@@ -41,22 +42,20 @@ class JsonResponseListener implements EventSubscriberInterface
     }
 
     /**
-     * Will force any response with the ApiController to have an "application/json" format.
+     * Will force any response from the ApiController to have an "application/json" format.
      *
      * @param FilterResponseEvent $event
      */
     public function onResponse(FilterResponseEvent $event)
     {
-        $controller = $event->getRequest()->attributes->get('_controller');
-
-        if ($this->checkControllerClass($controller)) {
+        if ($this->checkControllerClass($event->getRequest()->attributes->get('_controller'))) {
             $event->getResponse()->headers->set('Content-type', 'application/json', true);
         }
-
     }
 
     /**
      * Helps throwing exceptions with the ApiController, by transforming the exception into a JSON object.
+     * This is cool because now you don't have to worry about returning responses with errors, etc.
      *
      * @todo Add specific exceptions classes.
      *
@@ -64,17 +63,26 @@ class JsonResponseListener implements EventSubscriberInterface
      */
     public function onException(GetResponseForExceptionEvent $event)
     {
-        $controller = $event->getRequest()->attributes->get('_controller');
+        // If we're in debug mode, we keep the native Symfony behavior.
+        // This allows better understanding of the request itself, with profiler, wdt, etc.
+        if (!$this->debug) {
+            return;
+        }
 
-        if ($this->checkControllerClass($controller)) {
+        if ($this->checkControllerClass($event->getRequest()->attributes->get('_controller'))) {
 
             $e = $event->getException();
 
             // Add all exceptions in the output data.
-            $data = [
+            $output = [
                 'error' => true,
+                'info'  => $e->getMessage(),
                 'data'  => [],
             ];
+
+            // By default, the code is 500.
+            // But for any HttpException, the code is changed to the said exception's HTTP code.
+            $code = 500;
 
             do {
                 $current = [
@@ -82,22 +90,19 @@ class JsonResponseListener implements EventSubscriberInterface
                     'code'    => $e->getCode(),
                 ];
 
-                // Add more informations while in debug mode.
-                if ($this->debug) {
-                    $current['file']     = $e->getFile();
-                    $current['line']     = $e->getLine();
-                    $current['asString'] = $e->getTraceAsString();
-                    $current['full']     = $e->getTrace();
+                // Change the status code if is an HttpException.
+                if ($e instanceof HttpException && $e->getStatusCode()) {
+                    $code = $e->getStatusCode();
                 }
 
-                $data['data'] = $current;
+                $output['data'] = $current;
             } while ($e = $e->getPrevious());
 
-            // TODO: Add support to change the code depending on the exception.
-            $code = 500;
+            // In case the code is procesed manually instead of in the headers.
+            $output['code'] = $code;
 
             // Set a proper new response which will be JSON automatically
-            $event->setResponse(new JsonResponse($data, $code));
+            $event->setResponse(new JsonResponse($output, $code));
         }
     }
 

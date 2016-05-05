@@ -1,1 +1,4 @@
 services_list: Liste des services
+service_info: Informations sur un service
+no_item_found: Aucun élément trouvé
+
