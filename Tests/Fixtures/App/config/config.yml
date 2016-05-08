@@ -5,8 +5,8 @@ parameters:
 framework:
     test:            ~
     secret:          secret
-    translator:      { fallback: %locale% }
-    default_locale:  %locale%
+    translator:      { fallback: '%locale%' }
+    default_locale:  '%locale%'
     router:          { resource: "%kernel.root_dir%/config/routing.yml" }
     form:            true
     csrf_protection: true
@@ -33,7 +33,8 @@ services:
         class: Orbitale\Bundle\ApiBundle\Controller\ApiController
 
 orbitale_api:
-    allowed_origins:
-        - localhost
     services:
-        data: { entity: Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData }
+        v1:
+            entities:
+                ApiData:
+                    class: Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData

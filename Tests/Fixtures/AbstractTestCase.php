@@ -14,13 +14,16 @@ use AppKernel;
 use Doctrine\DBAL\Schema\SchemaException;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
-use Orbitale\Bundle\ApiBundle\Controller\ApiController;
 use Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\KernelInterface;
 
-abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
+abstract class AbstractTestCase extends WebTestCase
 {
+
+    const ENTITY_CLASS = 'Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData';
 
     /**
      * @var array
@@ -28,29 +31,19 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
     protected $entityFixtures = array();
 
     /**
-     * @var string
-     */
-    protected $entityClass = 'Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData';
-
-    /**
-     * @var AppKernel
-     */
-    protected $kernel;
-
-    /**
      * @var EntityManager
      */
-    protected $em;
+    protected static $em;
 
     /**
      * @var Container
      */
-    protected $container;
+    protected static $container;
 
     /**
-     * @var ApiController
+     * @var AppKernel
      */
-    protected $controller;
+    protected static $kernel;
 
     public function __construct($name = null, array $data = array(), $dataName = '')
     {
@@ -58,34 +51,63 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         $this->initKernelAndController('test');
     }
 
+    /**
+     * @param array $options
+     */
+    protected static function bootKernel(array $options = array())
+    {
+        if (method_exists('Symfony\Bundle\FrameworkBundle\Test\KernelTestCase', 'bootKernel')) {
+            parent::bootKernel($options);
+        } else {
+            if (null !== static::$kernel) {
+                static::$kernel->shutdown();
+            }
+            static::$kernel = static::createKernel($options);
+            static::$kernel->boot();
+        }
+    }
+
+    /**
+     * @param array $options An array of options to pass to the createKernel class
+     *
+     * @return KernelInterface
+     */
+    protected static function getKernel(array $options = array())
+    {
+        static::bootKernel($options);
+
+        return static::$kernel;
+    }
+
+    /**
+     * Manually set up kernel and generate schema/fixtures.
+     *
+     * @param string $env
+     *
+     * @throws SchemaException
+     */
     protected function initKernelAndController($env)
     {
-        if ($this->kernel) {
+        if (static::$kernel) {
             $this->tearDown();
         }
 
         // Boot the AppKernel in the test environment and with the debug.
-        $this->kernel = new AppKernel($env, true);
-        $this->kernel->boot();
+        static::$kernel = static::getKernel(['environment' => $env, 'debug' => true]);
 
         // Store the container and the entity manager in test case properties
-        $this->container  = $this->kernel->getContainer();
-        $this->controller = $this->container->get('orbitale_api_test_controller');
-        $this->em         = $this->container->get('doctrine')->getManager();
-
-        $this->controller->setContainer($this->container);
+        static::$container  = static::$kernel->getContainer();
+        static::$em         = static::$container->get('doctrine')->getManager();
 
         // Build the schema for sqlite
         $this->generateSchema();
 
-        // Add datas in the database
+        // Add data in the database
         $this->addFixtures();
     }
 
-    public function createRequest($method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $server = array(), $content = null)
+    public static function createRequest($method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $server = array(), $content = null)
     {
-        $this->container->enterScope('request');
-
         $server = array_replace(array(
             'HTTP_ORIGIN' => 'http://localhost/',
         ), $server);
@@ -93,8 +115,6 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         $httpRequest = Request::create('/', $method, $parameters, $cookies, $files, $server, $content);
 
         $httpRequest->attributes->set('_controller', 'Orbitale\Bundle\ApiBundle\Controller\ApiController');
-
-        $this->container->set('request', $httpRequest, 'request');
 
         return $httpRequest;
     }
@@ -104,9 +124,9 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         // Get the metadata of the application to create the schema.
         $metadata = $this->getMetadata();
 
-        if (!empty($metadata)) {
+        if ($metadata) {
             // Create SchemaTool
-            $tool = new SchemaTool($this->em);
+            $tool = new SchemaTool(static::$em);
             $tool->createSchema($metadata);
         } else {
             throw new SchemaException('No Metadata Classes to process.');
@@ -118,37 +138,32 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
         if (count($this->entityFixtures)) {
             return $this->entityFixtures;
         }
-        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $charactersLength = strlen($characters);
-        $randomString = '';
-        $length = pow(10, 3);
-        for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[rand(0, $charactersLength - 1)];
-        }
-        $this->entityFixtures = array(
-            array('name' => 'First one',  'value' => 1,       'hidden' => 'this text should be hidden'),
-            array('name' => 'Second one', 'value' => -1,      'hidden' => 'this text should also be hidden'),
-            array('name' => 'Second one', 'value' => $length, 'hidden' => 'And another long text (care, it\'s long):'.$randomString),
-        );
-        return $this->entityFixtures;
     }
 
     protected function addFixtures()
     {
         $entities = $this->generateFixtures();
         foreach ($entities as $entity) {
+            $class = static::ENTITY_CLASS;
             /** @var ApiData $object */
-            $object = new $this->entityClass();
+            $object = new $class();
             $object
                 ->setName($entity['name'])
                 ->setValue($entity['value'])
                 ->setHidden($entity['hidden'])
             ;
-            $this->em->persist($object);
+            static::$em->persist($object);
         }
-        $this->em->flush();
+        static::$em->flush();
     }
 
+    /**
+     * Polyfill in case json_last_error_msg() is not available.
+     *
+     * @param int $jsonLastErr
+     *
+     * @return string
+     */
     protected function parseJsonMsg($jsonLastErr)
     {
         switch ($jsonLastErr) {
@@ -166,18 +181,20 @@ abstract class AbstractTestCase extends \PHPUnit_Framework_TestCase
     /**
      * Overwrite this method to get specific metadata.
      *
-     * @return Array
+     * @return array
      */
     protected function getMetadata()
     {
-        return $this->em->getMetadataFactory()->getAllMetadata();
+        return static::$em->getMetadataFactory()->getAllMetadata();
     }
 
     public function tearDown()
     {
-        // Shutdown the kernel.
-        $this->kernel->shutdown();
-        $this->kernel = null;
+        if (static::$kernel) {
+            // Shutdown the kernel.
+            static::$kernel->shutdown();
+            static::$kernel = null;
+        }
 
         parent::tearDown();
     }

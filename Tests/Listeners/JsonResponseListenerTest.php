@@ -16,9 +16,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
-class JsonResponseListenerTest extends AbstractTestCase {
+class JsonResponseListenerTest extends AbstractTestCase
+{
 
     public function testKernelEventResponse()
     {
@@ -26,51 +28,57 @@ class JsonResponseListenerTest extends AbstractTestCase {
 
         $response = new Response();
 
-        $responseEvent = new FilterResponseEvent($this->kernel, $this->createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, $response);
+        $responseEvent = new FilterResponseEvent(static::getKernel(), static::createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, $response);
 
         $listener->onResponse($responseEvent);
 
-        $this->assertEquals('application/json', $response->headers->get('Content-type'));
+        static::assertEquals('application/json', $response->headers->get('Content-type'));
     }
 
     /**
      * @dataProvider provideExceptionEnvs
+     *
+     * @param \Exception $exception
      */
-    public function testKernelEventException($exceptionMessage, $env, $exceptionCode)
+    public function testKernelEventException(\Exception $exception)
     {
-        $listener = new JsonResponseListener($env);
+        $listener = new JsonResponseListener(true);
 
-        $exceptionEvent = new GetResponseForExceptionEvent($this->kernel, $this->createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, new \Exception($exceptionMessage, $exceptionCode));
+        $exceptionEvent = new GetResponseForExceptionEvent(static::getKernel(), static::createRequest('GET'), HttpKernelInterface::MASTER_REQUEST, $exception);
 
         $listener->onException($exceptionEvent);
 
         $response = $exceptionEvent->getResponse();
 
-        $this->assertInstanceOf('Symfony\Component\HttpFoundation\JsonResponse', $response);
+        static::assertInstanceOf('Symfony\Component\HttpFoundation\JsonResponse', $response);
 
+        // This "if" avoids having tons of errors when phpunit config does not stop on error
         if ($response instanceof JsonResponse) {
-            $content = json_decode($response->getContent(), true);
+            $content     = json_decode($response->getContent(), true);
             $jsonLastErr = json_last_error();
-            $jsonMsg = $this->parseJsonMsg($jsonLastErr);
+            $jsonMsg     = $this->parseJsonMsg($jsonLastErr);
 
-            $this->assertEquals(JSON_ERROR_NONE, $jsonLastErr, "\nERROR! Invalid response, json error:\n> ".$jsonLastErr.$jsonMsg);
+            static::assertEquals(JSON_ERROR_NONE,
+                $jsonLastErr,
+                "\nERROR! Invalid response, json error:\n> " . $jsonLastErr . $jsonMsg
+            );
+
             if (null !== $content) {
-                $this->assertArrayHasKey('error', $content);
-                $this->assertArrayHasKey('message', $content);
-                $this->assertArrayHasKey('exception', $content);
-                $this->assertEquals(true, isset($content['error']) ? $content['error'] : false);
-                $this->assertEquals($exceptionMessage, isset($content['message']) ? $content['message'] : null);
-                $this->assertEquals($exceptionCode, isset($content['exception']['code']) ? $content['exception']['code'] : null);
-                if ($env === 'dev') {
-                    $this->assertArrayHasKey('exception_trace', $content);
-                    $this->assertGreaterThan(0, count(isset($content['exception_trace']) ? $content['exception_trace'] : array()));
-                } else {
-                    $this->assertArrayNotHasKey('exception_trace', $content);
-                }
+                static::assertArrayHasKey('error', $content);
+                static::assertArrayHasKey('message', $content);
+                static::assertArrayHasKey('exception', $content);
+                static::assertEquals(true, isset($content['error']) ? $content['error'] : false);
+                static::assertEquals($exception->getMessage(), isset($content['message']) ? $content['message'] : null);
+                static::assertEquals($exception->getCode(), isset($content['exception']['code']) ? $content['exception']['code'] : null);
+                static::assertArrayHasKey('exception_trace', $content);
+                static::assertGreaterThan(0, count(isset($content['exception_trace']) ? $content['exception_trace'] : []));
             }
         }
     }
 
+    /**
+     * @return array[]
+     */
     public function provideExceptionEnvs()
     {
         return array(
@@ -81,11 +89,7 @@ class JsonResponseListenerTest extends AbstractTestCase {
 
     public function testEventsList()
     {
-        $listener = new JsonResponseListener('test');
-
-        $list = $listener->getSubscribedEvents();
-
-        $this->assertCount(2, $list);
+        static::assertCount(2, JsonResponseListener::getSubscribedEvents());
     }
 
 }

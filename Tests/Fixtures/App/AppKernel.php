@@ -18,10 +18,8 @@ class AppKernel extends Kernel
         return array(
             new Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
             new Symfony\Bundle\TwigBundle\TwigBundle(),
-            new Doctrine\Bundle\DoctrineBundle\DoctrineBundle(),
             new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle(),
-            new FOS\RestBundle\FOSRestBundle(),
-            new JMS\SerializerBundle\JMSSerializerBundle(),
+            new Doctrine\Bundle\DoctrineBundle\DoctrineBundle(),
             new Orbitale\Bundle\ApiBundle\OrbitaleApiBundle(),
             new Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\ApiDataTestBundle(),
         );

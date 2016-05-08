@@ -11,13 +11,11 @@
 namespace Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use JMS\Serializer\Annotation as Serializer;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity
  * @ORM\Table(name="api_data")
- * @Serializer\ExclusionPolicy("all")
  */
 class ApiData
 {
@@ -26,25 +24,21 @@ class ApiData
      * @ORM\Id
      * @ORM\Column(type="integer")
      * @ORM\GeneratedValue(strategy="AUTO")
-     * @Serializer\Expose
      */
     protected $id;
 
     /**
      * @ORM\Column(type="string", length=255)
      * @Assert\NotBlank()
-     * @Serializer\Expose
      */
     protected $name;
 
     /**
      * @ORM\Column(type="integer")
-     * @Serializer\Expose
      */
     protected $value;
     /**
      * @ORM\Column(type="text", nullable=true)
-     * @Serializer\Exclude
      */
     protected $hidden;
 
@@ -129,7 +123,6 @@ class ApiData
     }
 
     /**
-     * @Serializer\VirtualProperty()
      * @return string
      */
     public function custom()
