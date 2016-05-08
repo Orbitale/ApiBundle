@@ -1,0 +1,14 @@
+orbitale_api_all_services_infos:
+    resource: '@OrbitaleApiBundle/Resources/config/routing/services_infos.yml'
+
+orbitale_api_all_get_collection:
+    resource: '@OrbitaleApiBundle/Resources/config/routing/get_collection.yml'
+
+orbitale_api_all_get_item:
+    resource: '@OrbitaleApiBundle/Resources/config/routing/get_item.yml'
+
+orbitale_api_all_get_sub_element:
+    resource: '@OrbitaleApiBundle/Resources/config/routing/get_sub_element.yml'
+
+orbitale_api_all_delete:
+    resource: '@OrbitaleApiBundle/Resources/config/routing/delete.yml'

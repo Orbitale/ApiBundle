@@ -1,0 +1,9 @@
+orbitale_api_get_sub_element:
+    defaults:
+        _controller: OrbitaleApiBundle:Api:getSubElement
+    methods: GET
+    path: /{serviceName}/{entity}/{id}/{subElement}
+    requirements:
+        serviceName: \w+
+        entity:      \w+
+        subElement:  ^(\w+/)*\w+/?$

@@ -1,0 +1,9 @@
+orbitale_api_get_item:
+    defaults:
+        _controller: OrbitaleApiBundle:Api:getItem
+    methods: GET
+    path: /{serviceName}/{entity}/{id}
+    requirements:
+        serviceName: \w+
+        entity:      \w+
+        id:          \w+
