@@ -11,22 +11,16 @@
 namespace Orbitale\Bundle\ApiBundle\Controller;
 
 use Doctrine\ORM\AbstractQuery;
-use Orbitale\Bundle\ApiBundle\Repository\ApiRepository;
-use Doctrine\Common\Persistence\ObjectManager;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
-use Doctrine\ORM\PersistentCollection;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Orbitale\Bundle\ApiBundle\Repository\ApiRepository;
+use Orbitale\Bundle\ApiBundle\Repository\ApiRepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Validator\ConstraintViolation;
-use Symfony\Component\Validator\ConstraintViolationList;
-use Symfony\Component\Validator\ConstraintViolationListInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface as UGI;
 
 class ApiController extends Controller
@@ -53,8 +47,7 @@ class ApiController extends Controller
     private $subRequest;
 
     /**
-     * @Route("/", name="orbitale_api_index")
-     * @Method({"GET"})
+     * @return JsonResponse
      */
     public function indexAction()
     {
@@ -64,150 +57,124 @@ class ApiController extends Controller
 
         foreach ($services as $serviceName => $service) {
             $serviceData = [
-                'name' => $serviceName,
+                'name'     => $serviceName,
                 'root_url' => $this->generateUrl('orbitale_api_service_info', ['serviceName' => $serviceName], UGI::ABSOLUTE_URL),
                 'entities' => [],
             ];
             foreach ($service['entities'] as $entityName => $entity) {
                 $serviceData['entities'][] = [
-                    'name' => $entityName,
-                    'url' => $this->generateUrl('orbitale_api_cget', ['serviceName' => $serviceName, 'entity' => $entityName], UGI::ABSOLUTE_URL),
-                    'uses_form' => (bool) $entity['form_type'],
+                    'name'      => $entityName,
+                    'url'       => $this->generateUrl('orbitale_api_get_collection', [
+                        'serviceName' => $serviceName,
+                        'entity'      => $entityName,
+                    ], UGI::ABSOLUTE_URL),
+                    'uses_form' => (bool)$entity['form_type'],
                 ];
             }
             $data[] = $serviceData;
         }
 
         return $this->makeResponse([
-            'info'  => $this->get('translator')->trans('services_list'),
-            'data'  => $data,
+            'info' => $this->get('translator')->trans('infos.services_list'),
+            'data' => $data,
         ]);
     }
 
 
     /**
-     * @Route("/{serviceName}", name="orbitale_api_service_info", requirements={"serviceName": "\w+"})
-     * @Method({"GET"})
-     *
-     * @param string  $serviceName
-     * @param Request $request
+     * @param string $serviceName
      *
      * @return JsonResponse
      */
-    public function serviceInfoAction($serviceName, Request $request)
+    public function serviceInfoAction($serviceName)
     {
         $this->initialize($serviceName);
 
         $serviceData = [
-            'name' => $serviceName,
+            'name'     => $serviceName,
             'root_url' => $this->generateUrl('orbitale_api_service_info', ['serviceName' => $serviceName], UGI::ABSOLUTE_URL),
             'entities' => [],
         ];
         foreach ($this->currentService['entities'] as $entityName => $entity) {
             $serviceData['entities'][] = [
-                'name' => $entityName,
-                'url' => $this->generateUrl('orbitale_api_cget', ['serviceName' => $serviceName, 'entity' => $entityName], UGI::ABSOLUTE_URL),
-                'uses_form' => (bool) $entity['form_type'],
+                'name'      => $entityName,
+                'url'       => $this->generateUrl('orbitale_api_get_collection', [
+                    'serviceName' => $serviceName,
+                    'entity'      => $entityName,
+                ], UGI::ABSOLUTE_URL),
+                'uses_form' => (bool)$entity['form_type'],
             ];
         }
 
         return $this->makeResponse([
-            'info'  => $this->get('translator')->trans('services_list'),
-            'data'  => $serviceData,
+            'info' => $this->get('translator')->trans('infos.service_info'),
+            'data' => $serviceData,
         ]);
     }
 
     /**
-     * @Route("/{serviceName}/{entity}", name="orbitale_api_cget", requirements={"serviceName": "\w+", "entity": "\w+"})
-     * @Method({"GET"})
-     *
-     * @param string  $serviceName
-     * @param string  $entity
-     * @param Request $request
+     * @param string $serviceName
+     * @param string $entity
      *
      * @return JsonResponse
      */
-    public function cgetAction($serviceName, $entity, Request $request)
+    public function getCollectionAction($serviceName, $entity)
     {
         $this->initialize($serviceName, $entity);
 
-        /** @var EntityRepository|ApiRepository $repo */
-        $repo = $this->getDoctrine()->getManager()->getRepository($this->entity['class']);
+        $data = $this->getRepository($this->entity['class'])->findAllForApi();
 
-        if ($repo instanceof ApiRepository) {
-            // Overridable
-            $data = $repo->findAllForApi();
-        } else {
-            // Fallback
-            $data = $repo->createQueryBuilder('entity')->getQuery()->getArrayResult();
+        return $this->makeResponse([
+            'data' => $data,
+            'info' => count($data) ? '' : $this->get('translator')->trans('errors.no_item_found'),
+        ]);
+    }
+
+    /**
+     * @param string $serviceName
+     * @param string $entity
+     * @param string $id
+     *
+     * @return JsonResponse
+     */
+    public function getItemAction($serviceName, $entity, $id)
+    {
+        $this->initialize($serviceName, $entity);
+
+        $data = $this->getRepository($this->entity['class'])->findOneForApi($id);
+
+        if (!$data) {
+            throw new NotFoundHttpException($this->get('translator')->trans('errors.no_item_found'));
         }
 
         return $this->makeResponse(array(
             'data' => $data,
-            'info' => count($data) ? '' : $this->get('translator')->trans('no_item_found'),
         ));
     }
 
     /**
-     * @Route(
-     *     "/{serviceName}/{entity}/{id}",
-     *     name="orbitale_api_get",
-     *     requirements={
-     *         "id": "\d+",
-     *         "serviceName": "\w+",
-     *         "entity": "\w+"
-     *     }
-     * )
-     * @Method({"GET"})
-     *
-     * @param string  $serviceName
-     * @param string  $entity
-     * @param integer $id
+     * @param string $serviceName
+     * @param string $entity
+     * @param string $id
+     * @param string $subElement
      *
      * @return JsonResponse
      */
-    public function getAction($serviceName, $entity, $id)
+    public function getSubElementAction($serviceName, $entity, $id, $subElement)
     {
         $this->initialize($serviceName, $entity);
 
-        $em = $this->getDoctrine()->getManager();
-
-        /** @var EntityRepository|ApiRepository $repo */
-        $repo = $em->getRepository($this->entity['class']);
-
-        if ($repo instanceof ApiRepository) {
-            // Overridable
-            $data = $repo->findOneForApi($id);
-        } else {
-            // Fallback
-            $data = $repo
-                ->createQueryBuilder('entity')
-                ->where('entity.'.$em->getClassMetadata($this->entity['class'])->getSingleIdentifierFieldName().' = :id')
-                ->setParameter('id', $id)
-                ->getQuery()
-                ->getOneOrNullResult(AbstractQuery::HYDRATE_ARRAY)
-            ;
-        }
+        $data = $this->getRepository($this->entity['class'])->findSubElement($entity, $id, explode('/', $subElement));
 
         return $this->makeResponse(array(
             'data' => $data,
-            'info' => count($data) ? '' : $this->get('translator')->trans('no_item_found'),
+            'info' => count($data) ? '' : $this->get('translator')->trans('errors.no_item_found'),
         ));
-    }
-
-    /**
-     * @-Route("/{serviceName}/{entity}/{subElement}", requirements={"subElement": "([a-zA-Z0-9\._]/?)+", "id": "\d+"}, name="orbitale_api_get_subrequest")
-     *
-     * @param string$subElement
-     */
-    public function getSubElementAction($subElement)
-    {
-        // Todo
     }
 
     /**
      * @-Route("/{serviceName}", requirements={"serviceName": "\w+"}, name="orbitale_api_post")
-     * @Method({"post"})
+     * @-Method({"POST"})
      *
      * @param string  $serviceName
      * @param Request $request
@@ -216,11 +183,11 @@ class ApiController extends Controller
      */
     public function postAction($serviceName, Request $request)
     {
+        /*
         $this->checkAsker($request);
 
         $service = $this->getService($serviceName);
 
-        /** @var EntityManager $em */
         $em = $this->getDoctrine()->getManager();
 
         // Generate a new object
@@ -252,11 +219,12 @@ class ApiController extends Controller
             'path' => rtrim($serviceName, 's').'.'.$id,
             'link' => $this->generateUrl('orbitale_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
         ), 201);
+        */
     }
 
     /**
      * @-Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="orbitale_api_put")
-     * @Method({"PUT"})
+     * @-Method({"PUT"})
      *
      * @param string  $serviceName
      * @param integer $id
@@ -266,10 +234,10 @@ class ApiController extends Controller
      */
     public function putAction($serviceName, $id, Request $request)
     {
+        /*
         $this->checkAsker($request);
         $service = $this->getService($serviceName);
 
-        /** @var EntityManager $em */
         $em   = $this->getDoctrine()->getManager();
         $repo = $em->getRepository($service['entity']);
 
@@ -295,36 +263,60 @@ class ApiController extends Controller
             'path' => rtrim($serviceName, 's').'.'.$id,
             'link' => $this->generateUrl('orbitale_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
         ), 200);
+        */
     }
 
     /**
-     * @-Route("/{serviceName}/{id}", requirements={"id": "\d+"}, name="orbitale_api_delete")
-     * @Method({"DELETE"})
-     *
-     * @param string  $serviceName
-     * @param integer $id
-     * @param Request $request
+     * @param string $serviceName
+     * @param string $entity
+     * @param string $id
      *
      * @return JsonResponse
      */
-    public function deleteAction($serviceName, $id, Request $request)
+    public function deleteAction($serviceName, $entity, $id)
     {
-        $this->checkAsker($request);
+        $this->initialize($serviceName, $entity);
 
-        $service = $this->getService($serviceName);
+        /** @var EntityManager $em */
+        $em       = $this->getDoctrine()->getManager();
+        $metadata = $em->getClassMetadata($this->entity['class']);
+        $repo     = $em->getRepository($this->entity['class']);
 
-        $em = $this->getDoctrine()->getManager();
+        // Get the original object
+        $data = $repo->find($id);
 
-        $data = $em->getRepository($service['entity'])->find($id);
+        // Get the array representation of this object without using serializer
+        $arrayData = $repo
+            ->createQueryBuilder('entity')
+            ->where('entity.' . $metadata->getSingleIdentifierFieldName() . ' = :id')
+            ->setParameter('id', $id)
+            ->getQuery()->getOneOrNullResult(AbstractQuery::HYDRATE_ARRAY)
+        ;
 
         if (!$data) {
-            return $this->error('No item found with this identifier.');
+            throw new NotFoundHttpException($this->get('translator')->trans('errors.no_item_found'));
         }
 
         $em->remove($data);
         $em->flush();
 
-        return $this->makeResponse(array('data' => $data, 'path' => rtrim($serviceName, 's') . '.' . $id));
+        return $this->makeResponse(array(
+            'data' => $arrayData,
+            'info' => array(
+                $this->get('translator')->trans('infos.deleted_successfully'),
+                $this->get('translator')->trans('infos.data_contain_deleted_element'),
+            ),
+        ));
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return array
+     */
+    protected function getOneElement($id)
+    {
+        return $data;
     }
 
     /**
@@ -334,24 +326,14 @@ class ApiController extends Controller
      * @param integer $statusCode
      * @param array   $headers
      *
-     * @return Response
+     * @return JsonResponse
      */
-    protected function makeResponse(array $outputData = [], $statusCode = null, array $headers = array())
+    protected function makeResponse(array $outputData = [], $statusCode = null, array $headers = [])
     {
         $headers['Content-Type'] = 'application/json; charset=utf-8';
 
-        $outputData['meta'] = [
-            'service' => $this->currentService['name'],
-            'entity' => $this->entity ? $this->entity['name'] : null,
-            'path' => $this->currentService['name'].($this->entity ? ('.'.$this->entity['name']) : ''),
-        ];
-
-        if ($this->subRequest) {
-            $outputData['meta']['path'] .= '.'.$this->subRequest;
-        }
-
         if (!array_key_exists('error', $outputData)) {
-            $outputData = array_merge(['error' => false], $outputData);
+            $outputData = array_merge(array('error' => false), $outputData);
         }
 
         if (!array_key_exists('data', $outputData)) {
@@ -359,44 +341,10 @@ class ApiController extends Controller
         }
 
         if (!array_key_exists('info', $outputData)) {
-            $outputData = array_merge(['info' => ''], $outputData);
+            $outputData = array_merge(array('info' => ''), $outputData);
         }
 
         return new JsonResponse($outputData, $statusCode ?: 200, $headers);
-    }
-
-    /**
-     * @param ConstraintViolationListInterface $errors
-     *
-     * @return Response
-     */
-    protected function validationError(ConstraintViolationListInterface $errors)
-    {
-        return $this->makeResponse(array(
-            'error'   => true,
-            'message' => $this->get('translator')->trans('Invalid form, please re-check.', array(), 'orbitale_api.exceptions'),
-            'errors'  => $errors,
-        ), 400);
-    }
-
-    /**
-     * Handles a classic error (not an exception).
-     * The difference between this method and an exception is that with this method you can specify HTTP code.
-     *
-     * @param string $message
-     * @param array  $messageParams
-     * @param int    $code
-     *
-     * @return JsonResponse
-     */
-    protected function error($message = '', $messageParams = array(), $code = 404)
-    {
-        $message = $this->get('translator')->trans($message, $messageParams, 'orbitale_api.exceptions');
-
-        return $this->makeResponse(array(
-            'error'   => true,
-            'message' => $message,
-        ), $code);
     }
 
     /**
@@ -409,43 +357,46 @@ class ApiController extends Controller
      */
     protected function mergeObject(&$object, ParameterBag $post)
     {
+        /*
         // The user object has to be the "json" parameter
         $userObject = $post->has('json') ? $post->get('json') : null;
 
         if (!$userObject) {
             $msg = 'You must specify the "json" POST parameter.';
-            return new ConstraintViolationList(array(
+
+            return new ConstraintViolationList([
                 new ConstraintViolation($msg, $msg, array(), '', null, '', ''),
-            ));
+            ]);
         }
         if (is_string($userObject)) {
             // Allows either JSON string or array
             $userObject = json_decode($post->get('json'), true);
             if (!$userObject) {
                 $msg = 'Error while parsing json.';
+
                 return new ConstraintViolationList(array(
                     new ConstraintViolation($msg, $msg, array(), '', null, '', ''),
                 ));
             }
         }
 
-        $serializer = $this->container->get('serializer');
+        $serializer = $this->get('serializer');
 
         if ($post->get('mapping')) {
-            /** @var ObjectManager $entityManager */
             $entityManager = $this->getDoctrine()->getManager();
-            $entityMerger = new EntityMerger($entityManager, $serializer);
+            $entityMerger  = new EntityMerger($entityManager, $serializer);
             try {
                 $object = $entityMerger->merge($object, $userObject, $post->get('mapping'));
             } catch (\Exception $e) {
-                $msg = $e->getMessage();
+                $msg          = $e->getMessage();
                 $propertyPath = null;
                 if (strpos($msg, 'If you want to specify ') !== false) {
                     $propertyPath = preg_replace('~^.*If you want to specify "([^"]+)".*$~', '$1', $msg);
                 }
-                return new ConstraintViolationList(array(
-                    new ConstraintViolation($msg, $msg, array(), '', $propertyPath, '', ''),
-                ));
+
+                return new ConstraintViolationList([
+                    new ConstraintViolation($msg, $msg, [], '', $propertyPath, '', ''),
+                ]);
             }
         } else {
             // Transform the full item recursively into an array
@@ -460,6 +411,7 @@ class ApiController extends Controller
         }
 
         return $this->get('validator')->validate($object);
+        */
     }
 
     /**
@@ -476,17 +428,18 @@ class ApiController extends Controller
     protected function fetchSubElement($subElement, $service, $data, &$key)
     {
 
+        /*
         $elements = explode('/', trim($subElement, '/'));
 
         if (count($elements)) {
-            $key .= '.'.$this->getPropertyValue('_id', $data, $service['name']);
+            $key .= '.' . $this->getPropertyValue('_id', $data, $service['name']);
         }
 
         foreach ($elements as $k => $element) {
-            $key .= '.'.$element;
+            $key .= '.' . $element;
             if (is_numeric($element)) {
                 // Get an element when subElement is "/element/{id}"
-                $element = (int) $element;
+                $element = (int)$element;
                 if (is_array($data) || $data instanceof \Traversable) {
                     $found = false;
                     foreach ($data as $searchingData) {
@@ -496,8 +449,8 @@ class ApiController extends Controller
                         }
                     }
                     if (!$found) {
-                        return $this->error('Found no element with identifier "'.$element.'" in requested object.',
-                            array(), 404);
+                        return $this->error('Found no element with identifier "' . $element . '" in requested object.',
+                            [], 404);
                     }
                 } else {
                     return $this->error('Identifier cannot be requested for a collection.');
@@ -509,56 +462,7 @@ class ApiController extends Controller
         }
 
         return $data;
-    }
-
-    /**
-     * Retrieves the value of a property in an object.
-     * The special "_id" field retrieves the primary key.
-     *
-     * @param $field
-     * @param $object
-     *
-     * @return int
-     * @throws \Exception
-     */
-    protected function getPropertyValue($field, $object)
-    {
-        if (!is_object($object)) {
-            throw new \Exception('Field "'.$field.'" cannot be retrieved as analyzed element is not an object.');
-        }
-        /** @var ClassMetadataInfo $metadatas */
-        $metadatas = $this->getDoctrine()->getManager()->getClassMetadata(get_class($object));
-
-        if ($field === '_id') {
-            // Check for identifier
-            $values = array_values($metadatas->getIdentifierValues($object));
-            return (int) $values[0];
-        } else {
-            // Check for any other field
-            $service = $this->getService($field, false);
-            if ($service) {
-                return $this
-                    ->getDoctrine()->getManager()
-                    ->getRepository($service['entity'])
-                    ->findBy(array(
-                        $metadatas->getAssociationMappedByTargetField($field) => $this->getPropertyValue('_id', $object)
-                    ));
-            }
-            if ($metadatas->hasField($field) || $metadatas->hasAssociation($field)) {
-                $reflectionProperty = $metadatas->getReflectionClass()->getProperty($field);
-                $reflectionProperty->setAccessible(true);
-
-                $data = $reflectionProperty->getValue($object);
-                if ($data instanceof PersistentCollection) {
-                    $data = $data->getValues();
-                }
-                return $data;
-            } else {
-                $ref = new \ReflectionClass($object);
-                throw new \Exception('Field "'.$field.'" does not exist in "'.$ref->getShortName().'" object');
-            }
-        }
-
+        */
     }
 
     /**
@@ -588,5 +492,25 @@ class ApiController extends Controller
 
             $this->entity = $this->currentService['entities'][$entity];
         }
+    }
+
+    /**
+     * @param string $entity
+     *
+     * @return ApiRepository
+     */
+    private function getRepository($entity)
+    {
+        /** @var EntityManager $em */
+        $em = $this->getDoctrine()->getManager();
+
+        $repo = $em->getRepository($entity);
+
+        // Fallback to our own repository to be sure the default behavior can work.
+        if (!($repo instanceof ApiRepositoryInterface)) {
+            $repo = new ApiRepository($em, $em->getClassMetadata($entity));
+        }
+
+        return $repo;
     }
 }
