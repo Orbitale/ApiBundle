@@ -1,3 +1,8 @@
-services_list: Services list
-service_info: Service info
-no_item_found: No item found
+infos:
+    services_list: Services list
+    service_info: Service info
+    deleted_successfully: Deleted successfully
+    data_contain_deleted_element: Data contain the deleted element
+errors:
+    no_item_found: No item found
+    invalid_form: Invalid form, please re-check
