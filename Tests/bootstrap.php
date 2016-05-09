@@ -9,6 +9,7 @@
  */
 
 use Doctrine\Common\Annotations\AnnotationRegistry;
+use Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
@@ -38,7 +39,6 @@ AnnotationRegistry::registerLoader(function($class) use ($autoload) {
     $autoload->loadClass($class);
     return class_exists($class, false);
 });
-
 
 include __DIR__.'/Fixtures/App/AppKernel.php';
 
@@ -73,12 +73,21 @@ $length = pow(10, 3);
 for ($i = 0; $i < $length; $i++) {
     $randomString .= $characters[mt_rand(0, $charactersLength - 1)];
 }
-$this->entityFixtures = array(
-    array('name' => 'First one',  'value' => 1,       'hidden' => 'this text should be hidden'),
-    array('name' => 'Second one', 'value' => -1,      'hidden' => 'this text should also be hidden'),
-    array('name' => 'Second one', 'value' => $length, 'hidden' => 'And another long text (care, it\'s long):'.$randomString),
+$entityFixtures = array(
+    array('name' => 'First one',  'slug' => 'first-one',  'value' => 1),
+    array('name' => 'Second one', 'slug' => 'second-one', 'value' => -1),
+    array('name' => 'Third one',  'slug' => 'first-one',  'value' => $length),
 );
-//return $this->entityFixtures;
-
+$em = $kernel->getContainer()->get('doctrine')->getManager();
+foreach ($entityFixtures as $fixture) {
+    $object = new ApiData();
+    $object
+        ->setName($fixture['name'])
+        ->setSlug($fixture['slug'])
+        ->setValue($fixture['value'])
+    ;
+    $em->persist($object);
+}
+$em->flush();
 
 $kernel->shutdown();

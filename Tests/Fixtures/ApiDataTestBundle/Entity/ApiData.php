@@ -21,6 +21,8 @@ class ApiData
 {
 
     /**
+     * @var integer
+     *
      * @ORM\Id
      * @ORM\Column(type="integer")
      * @ORM\GeneratedValue(strategy="AUTO")
@@ -28,22 +30,29 @@ class ApiData
     protected $id;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @var string
+     *
+     * @ORM\Column(type="string")
      * @Assert\NotBlank()
      */
     protected $name;
 
     /**
-     * @ORM\Column(type="integer")
+     * @var string
+     *
+     * @ORM\Column(type="string")
      */
-    protected $value;
-    /**
-     * @ORM\Column(type="text", nullable=true)
-     */
-    protected $hidden;
+    protected $slug;
 
     /**
-     * @return mixed
+     * @var string
+     *
+     * @ORM\Column(type="string")
+     */
+    protected $value;
+
+    /**
+     * @return int
      */
     public function getId()
     {
@@ -51,19 +60,17 @@ class ApiData
     }
 
     /**
-     * @param mixed $id
-     *
+     * @param int $id
      * @return ApiData
      */
     public function setId($id)
     {
         $this->id = $id;
-
         return $this;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getName()
     {
@@ -71,19 +78,35 @@ class ApiData
     }
 
     /**
-     * @param mixed $name
-     *
+     * @param string $name
      * @return ApiData
      */
     public function setName($name)
     {
         $this->name = $name;
-
         return $this;
     }
 
     /**
-     * @return mixed
+     * @return string
+     */
+    public function getSlug()
+    {
+        return $this->slug;
+    }
+
+    /**
+     * @param string $slug
+     * @return ApiData
+     */
+    public function setSlug($slug)
+    {
+        $this->slug = $slug;
+        return $this;
+    }
+
+    /**
+     * @return string
      */
     public function getValue()
     {
@@ -91,43 +114,13 @@ class ApiData
     }
 
     /**
-     * @param mixed $value
-     *
+     * @param string $value
      * @return ApiData
      */
     public function setValue($value)
     {
         $this->value = $value;
-
         return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getHidden()
-    {
-        return $this->hidden;
-    }
-
-    /**
-     * @param mixed $hidden
-     *
-     * @return ApiData
-     */
-    public function setHidden($hidden)
-    {
-        $this->hidden = $hidden;
-
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function custom()
-    {
-        return 'custom-value';
     }
 
 }

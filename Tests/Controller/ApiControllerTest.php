@@ -17,6 +17,11 @@ class ApiControllerTest extends AbstractTestCase
 {
 
     /**
+     * @var array
+     */
+    protected static $entityFixtures = array();
+
+    /**
      * @param Response $response
      * @param int      $expectedCode
      *
@@ -50,7 +55,7 @@ class ApiControllerTest extends AbstractTestCase
         static::assertNotEmpty($objects);
     }
 
-    public function testWrongService($env, $expectedExceptionMessage)
+    public function testWrongService()
     {
         $client = static::createClient();
 
@@ -89,13 +94,19 @@ class ApiControllerTest extends AbstractTestCase
 
     public function getExpectedFixturesIds()
     {
-        $ids = array();
-
-        foreach ($this->entityFixtures as $key => $fixture) {
-            $ids[] = array($key + 1);
+        if (!static::$entityFixtures) {
+            static::$entityFixtures = static::$kernel
+                ->getContainer()
+                ->get('doctrine')
+                ->getManager()
+                ->getRepository('ApiDataTestBundle:ApiData')
+                ->createQueryBuilder('data')
+                ->select('data.id')
+                ->getQuery()->getArrayResult()
+            ;
         }
 
-        return $ids;
+        return static::$entityFixtures;
     }
 
     /**

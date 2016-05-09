@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 class JsonResponseListenerTest extends AbstractTestCase
@@ -65,13 +66,17 @@ class JsonResponseListenerTest extends AbstractTestCase
 
             if (null !== $content) {
                 static::assertArrayHasKey('error', $content);
-                static::assertArrayHasKey('message', $content);
-                static::assertArrayHasKey('exception', $content);
+                static::assertArrayHasKey('info', $content);
+                static::assertArrayHasKey('error_code', $content);
                 static::assertEquals(true, isset($content['error']) ? $content['error'] : false);
-                static::assertEquals($exception->getMessage(), isset($content['message']) ? $content['message'] : null);
-                static::assertEquals($exception->getCode(), isset($content['exception']['code']) ? $content['exception']['code'] : null);
-                static::assertArrayHasKey('exception_trace', $content);
-                static::assertGreaterThan(0, count(isset($content['exception_trace']) ? $content['exception_trace'] : []));
+                static::assertEquals($exception->getMessage(), isset($content['info']) ? $content['info'] : null);
+                static::assertEquals(array(), isset($content['data']) ? $content['data'] : null);
+
+                if ($exception instanceof HttpException) {
+                    static::assertEquals($exception->getStatusCode(), $response->getStatusCode());
+                } else {
+                    static::assertEquals(500, $response->getStatusCode());
+                }
             }
         }
     }
@@ -82,8 +87,8 @@ class JsonResponseListenerTest extends AbstractTestCase
     public function provideExceptionEnvs()
     {
         return array(
-            array('Test exception', 'test', 666),
-            array('Dev exception', 'dev', -1),
+            array(new \Exception('Test exception', 666)),
+            array(new NotFoundHttpException('Test HTTP exception')),
         );
     }
 

@@ -14,7 +14,6 @@ use AppKernel;
 use Doctrine\DBAL\Schema\SchemaException;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Tools\SchemaTool;
-use Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,11 +23,6 @@ abstract class AbstractTestCase extends WebTestCase
 {
 
     const ENTITY_CLASS = 'Orbitale\Bundle\ApiBundle\Tests\Fixtures\ApiDataTestBundle\Entity\ApiData';
-
-    /**
-     * @var array
-     */
-    protected $entityFixtures = array();
 
     /**
      * @var EntityManager
@@ -98,12 +92,6 @@ abstract class AbstractTestCase extends WebTestCase
         // Store the container and the entity manager in test case properties
         static::$container  = static::$kernel->getContainer();
         static::$em         = static::$container->get('doctrine')->getManager();
-
-        // Build the schema for sqlite
-        $this->generateSchema();
-
-        // Add data in the database
-        $this->addFixtures();
     }
 
     public static function createRequest($method = 'GET', $parameters = array(), $cookies = array(), $files = array(), $server = array(), $content = null)
@@ -117,44 +105,6 @@ abstract class AbstractTestCase extends WebTestCase
         $httpRequest->attributes->set('_controller', 'Orbitale\Bundle\ApiBundle\Controller\ApiController');
 
         return $httpRequest;
-    }
-
-    protected function generateSchema()
-    {
-        // Get the metadata of the application to create the schema.
-        $metadata = $this->getMetadata();
-
-        if ($metadata) {
-            // Create SchemaTool
-            $tool = new SchemaTool(static::$em);
-            $tool->createSchema($metadata);
-        } else {
-            throw new SchemaException('No Metadata Classes to process.');
-        }
-    }
-
-    protected function generateFixtures()
-    {
-        if (count($this->entityFixtures)) {
-            return $this->entityFixtures;
-        }
-    }
-
-    protected function addFixtures()
-    {
-        $entities = $this->generateFixtures();
-        foreach ($entities as $entity) {
-            $class = static::ENTITY_CLASS;
-            /** @var ApiData $object */
-            $object = new $class();
-            $object
-                ->setName($entity['name'])
-                ->setValue($entity['value'])
-                ->setHidden($entity['hidden'])
-            ;
-            static::$em->persist($object);
-        }
-        static::$em->flush();
     }
 
     /**
@@ -175,6 +125,7 @@ abstract class AbstractTestCase extends WebTestCase
             case JSON_ERROR_UTF8:           $jsonMsg = ' - Malformed UTF-8 characters, possibly incorrectly encoded'; break;
             default:                        $jsonMsg = ' - Unknown error'; break;
         }
+
         return $jsonMsg;
     }
 

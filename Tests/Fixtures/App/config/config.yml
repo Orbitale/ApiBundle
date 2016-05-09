@@ -1,6 +1,7 @@
 
 parameters:
     locale: fr
+    database_path: '%kernel.cache_dir%/../test_database.db3'
 
 framework:
     test:            ~
@@ -18,10 +19,7 @@ framework:
 doctrine:
     dbal:
         driver:   pdo_sqlite
-        host:     localhost
-        dbname:   orbitale_api_test
-        user:     root
-        password: ~
+        path:     '%database_path%'
         charset:  UTF8
         memory:   true
     orm:
