@@ -142,9 +142,9 @@ class ApiController extends Controller
             throw new NotFoundHttpException($this->get('translator')->trans('errors.no_item_found'));
         }
 
-        return $this->makeResponse(array(
+        return $this->makeResponse([
             'data' => $data,
-        ));
+        ]);
     }
 
     /**
@@ -161,60 +161,46 @@ class ApiController extends Controller
 
         $data = $this->getRepository($this->entity['class'])->findSubElement($entity, $id, explode('/', $subElement));
 
-        return $this->makeResponse(array(
+        return $this->makeResponse([
             'data' => $data,
             'info' => count($data) ? '' : $this->get('translator')->trans('errors.no_item_found'),
-        ));
+        ]);
     }
 
     /**
-     * @-Route("/{serviceName}", requirements={"serviceName": "\w+"}, name="orbitale_api_post")
-     * @-Method({"POST"})
-     *
      * @param string  $serviceName
+     * @param string  $entity
      * @param Request $request
      *
      * @return JsonResponse
      */
-    public function postAction($serviceName, Request $request)
+    public function postAction($serviceName, $entity, Request $request)
     {
-        /*
-        $this->checkAsker($request);
+        $this->initialize($serviceName, $entity);
 
-        $service = $this->getService($serviceName);
+        $data = [];
 
-        $em = $this->getDoctrine()->getManager();
+        $formTypeClass = $this->entity['form_type'];
 
-        // Generate a new object
-        $object = new $service['entity'];
-
-        $errors = $this->mergeObject($object, $request->request);
-
-        if ($errors instanceof ConstraintViolationListInterface && count($errors)) {
-            return $this->validationError($errors);
+        if (!$formTypeClass) {
+            $formTypeClass = 'Orbitale\Bundle\ApiBundle\Form\ApiFormType';
         }
 
-        $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
+        $object = new $this->entity['class']();
+        $form = $this->get('form.factory')->createNamedBuilder($this->entity['name'], $formTypeClass, $object);
 
-        $repo = $em->getRepository($service['entity']);
+        // TODO
 
-        if ($id && $repo->find($id)) {
-            throw new \InvalidArgumentException('"POST" method is used to insert new datas. If you want to edit an object, use the "PUT" method instead.');
-        } else {
-            $em->persist($object);
-        }
-
-        $em->flush();
-
-        // Get the new object ID for full refresh
-        $id = $em->getUnitOfWork()->getSingleIdentifierValue($object);
-
-        return $this->makeResponse(array(
-            'data' => $repo->find($id),
-            'path' => rtrim($serviceName, 's').'.'.$id,
-            'link' => $this->generateUrl('orbitale_api_get', array('id' => $id, 'serviceName' => $serviceName), UrlGeneratorInterface::ABSOLUTE_URL),
-        ), 201);
-        */
+        return $this->makeResponse([
+            'info' => 'To do',
+            /*
+            'data' => $data,
+            'info' => [
+                $this->get('translator')->trans('form.posted_successfully'),
+                $this->get('translator')->trans('form.data_contain_new_element'),
+            ],
+            */
+        ]);
     }
 
     /**
@@ -295,13 +281,13 @@ class ApiController extends Controller
         $em->remove($data);
         $em->flush();
 
-        return $this->makeResponse(array(
+        return $this->makeResponse([
             'data' => $arrayData,
-            'info' => array(
+            'info' => [
                 $this->get('translator')->trans('infos.deleted_successfully'),
                 $this->get('translator')->trans('infos.data_contain_deleted_element'),
-            ),
-        ));
+            ],
+        ]);
     }
 
     /**
@@ -328,7 +314,7 @@ class ApiController extends Controller
         $headers['Content-Type'] = 'application/json; charset=utf-8';
 
         if (!array_key_exists('error', $outputData)) {
-            $outputData = array_merge(array('error' => false), $outputData);
+            $outputData = array_merge(['error' => false], $outputData);
         }
 
         if (!array_key_exists('data', $outputData)) {
@@ -336,7 +322,7 @@ class ApiController extends Controller
         }
 
         if (!array_key_exists('info', $outputData)) {
-            $outputData = array_merge(array('info' => ''), $outputData);
+            $outputData = array_merge(['info' => ''], $outputData);
         }
 
         return new JsonResponse($outputData, $statusCode ?: 200, $headers);

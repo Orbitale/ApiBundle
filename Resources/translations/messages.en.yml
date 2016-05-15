@@ -6,3 +6,7 @@ infos:
 errors:
     no_item_found: No item found
     invalid_form: Invalid form, please re-check
+form:
+    posted_successfully: Posted successfully
+    data_contain_new_element: Data contain the new element
+    data_contain_updated_element: Data contain the updated element

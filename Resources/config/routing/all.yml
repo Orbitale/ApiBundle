@@ -12,3 +12,6 @@ orbitale_api_all_get_sub_element:
 
 orbitale_api_all_delete:
     resource: '@OrbitaleApiBundle/Resources/config/routing/delete.yml'
+
+orbitale_api_post:
+    resource: '@OrbitaleApiBundle/Resources/config/routing/post.yml'

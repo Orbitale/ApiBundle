@@ -1,5 +1,4 @@
 
 orbitale_api:
-    resource: "@OrbitaleApiBundle/Controller/"
-    type:     annotation
+    resource: "@OrbitaleApiBundle/Resources/config/routing/all.yml"
     prefix:   /api/

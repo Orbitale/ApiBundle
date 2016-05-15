@@ -7,3 +7,16 @@ services:
             kernelEnvironment: "%kernel.debug%"
         tags:
             - { name: kernel.event_subscriber }
+
+    orbitale_api.entity_config:
+        class: Orbitale\Bundle\ApiBundle\Config\EntityConfig
+        arguments:
+            - '@doctrine.orm.entity_manager'
+
+    orbitale_api.form_type:
+        class: Orbitale\Bundle\ApiBundle\Form\ApiFormType
+        arguments:
+            - '@orbitale_api.entity_config'
+        tags:
+            - { name: form.type, alias: orbitale_api_form_type }
+

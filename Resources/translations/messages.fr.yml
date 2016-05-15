@@ -6,3 +6,7 @@ infos:
 errors:
     no_item_found: Aucun élément trouvé
     invalid_form: Formulaire invalide, veuillez vérifier de nouveau
+form:
+    posted_successfully: Posté avec succès
+    data_contain_new_element: Le champ "data" contient le nouvel élément
+    data_contain_updated_element: Le champ "data" contient l'élément mis à jour
