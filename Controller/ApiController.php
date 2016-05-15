@@ -42,11 +42,6 @@ class ApiController extends Controller
     private $entity;
 
     /**
-     * @var string
-     */
-    private $subRequest;
-
-    /**
      * @return JsonResponse
      */
     public function indexAction()
