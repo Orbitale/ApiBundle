@@ -1,12 +1,12 @@
 orbitale_api_index:
     defaults:
-        _controller: OrbitaleApiBundle:Api:index
+        _controller: 'OrbitaleApiBundle:Api:index'
     methods: GET
     path: /services
 
 orbitale_api_service_info:
     defaults:
-        _controller: OrbitaleApiBundle:Api:serviceInfo
+        _controller: 'OrbitaleApiBundle:Api:serviceInfo'
     methods: GET
     path: /services/{serviceName}
     requirements:

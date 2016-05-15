@@ -1,6 +1,6 @@
 orbitale_api_get_collection:
     defaults:
-        _controller: OrbitaleApiBundle:Api:getCollection
+        _controller: 'OrbitaleApiBundle:Api:getCollection'
     methods: GET
     path: /{serviceName}/{entity}
     requirements:

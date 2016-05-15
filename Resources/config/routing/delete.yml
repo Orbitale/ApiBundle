@@ -1,6 +1,6 @@
 orbitale_api_delete:
     defaults:
-        _controller: OrbitaleApiBundle:Api:delete
+        _controller: 'OrbitaleApiBundle:Api:delete'
     methods: DELETE
     path: /{serviceName}/{entity}/{id}
     requirements:
